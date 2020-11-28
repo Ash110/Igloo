@@ -1,0 +1,7 @@
+{
+    "mongoURI": "mongodb://localhost:27017/bender",
+    "neo4juri": "bolt://localhost:7687",
+    "neo4juser": "neo4j",
+    "neo4jpassword": "neobender",
+    "jwtSecret": "366890e1037391ea49004c94a46d6b585fe5c4d649bada3f0054ac09dc569a6b"
+}
