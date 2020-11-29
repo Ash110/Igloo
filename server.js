@@ -39,6 +39,8 @@ connectToDatabase();
 //Setting up routes
 app.use('/api/users', require('./routes/api/users'));
 app.use('/api/files', require('./routes/api/files'));
+app.use('/api/groups', require('./routes/api/groups'));
+app.use('/api/posts', require('./routes/api/posts'));
 
 //Static serving of images
 app.use(express.static('client/build'));

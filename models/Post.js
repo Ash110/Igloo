@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
+const setExpiryDate = () => {
+    var d = new Date()
+    d.setFullYear(d.getFullYear() + 99);
+    return d
+}
+
 const PostModel = new Schema({
     creator: {
         type: mongoose.Schema.Types.ObjectId,
@@ -9,9 +15,6 @@ const PostModel = new Schema({
         required: true
     },
     isText: {
-        type: Boolean,
-    },
-    isTemp: {
         type: Boolean,
     },
     image: {
@@ -28,6 +31,15 @@ const PostModel = new Schema({
         required: true,
         default: new Date()
     },
+    expiryDate : {
+        type: Date,
+        required: true,
+        default: setExpiryDate()
+    },
+    selectedGroups: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Group',
+    }], 
     likes: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

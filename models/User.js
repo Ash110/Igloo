@@ -49,10 +49,10 @@ const UserModel = new Schema({
     //     type: mongoose.Schema.Types.ObjectId,
     //     ref: 'Notification',
     // }],
-    // posts: [{
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: 'Post',
-    // }],
+    posts: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Post',
+    }],
     passwordReset: {
         code: {
             type: String,
