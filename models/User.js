@@ -27,7 +27,7 @@ const UserModel = new Schema({
     profilePicture: {
         type: String,
         required: true,
-        default: "https://openclipart.org/download/247324/abstract-user-flat-1.svg"
+        default: "user.png"
     },
     bio: {
         type: String,

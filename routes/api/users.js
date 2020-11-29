@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../../models/User');
 const Group = require('../../models/Group');
+const auth = require('../../middleware/auth')
 const neodriver = require('../../neo4jconnect');
 const { check, validationResult } = require('express-validator');
 
@@ -58,6 +59,8 @@ router.post('/register',
                 email,
                 password,
                 username: username.toLowerCase(),
+                bio:"",
+                profilePicture : "user.png"
             });
             const salt = await bcrypt.genSalt(10);
             user.password = await bcrypt.hash(password, salt);
@@ -195,5 +198,23 @@ router.post('/login',
             }
         }
     });
+
+//@route   /api/users/updateBio
+//@desc    Update a user's bio
+//access   Private
+
+router.post('/updateBio',auth,async(req,res)=>{
+    const {bio} = req.body;
+    try {
+        if(bio.trim()===''){
+            return res.status(403).send("Bio cannot be empty");
+        }
+        await User.findOneAndUpdate({_id : req.id},{bio});
+        return res.status(200).send("Done");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
 
 module.exports = router;
