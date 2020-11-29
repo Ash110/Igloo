@@ -6,6 +6,7 @@ const User = require('../../models/User');
 const Group = require('../../models/Group');
 const auth = require('../../middleware/auth')
 const neodriver = require('../../neo4jconnect');
+const sendWelcomeMail = require('../email/welcomeMail');
 const { check, validationResult } = require('express-validator');
 
 const router = express.Router();
@@ -104,7 +105,7 @@ router.post('/register',
                 id: user.id + user.id, //Gets the ID of the user that was just saved. 
                 iat: new Date().getTime()
             }
-            // await sendWelcomeMail(user.email, user.username);
+            sendWelcomeMail(user.name, user.email);
             jwt.sign(
                 payload,
                 config.get('jwtSecret'),
