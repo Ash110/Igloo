@@ -151,18 +151,20 @@ router.post('/login',
                 // sendNewLoginMail(user.email, user.username, (req.headers['x-forwarded-for'] || req.connection.remoteAddress))
                 //     .then(() => console.log("Email Sent"))
                 //     .catch((err) => console.log(err));
+
+                const {name, username, profilePicture} = user;
                 jwt.sign(
                     payload,
                     config.get('jwtSecret'),
                     { expiresIn: "7 days" },
                     (err, token) => {
                         if (err) throw err;
-                        res.status(200).json({ token });
+                        return res.status(200).json({ token,  name, username, profilePicture});
                     }
                 )
             } catch (err) {
                 console.log(err.message);
-                res.status(500).send("Server Error");
+                return res.status(500).send("Server Error");
             }
         } else {
             try {
@@ -183,13 +185,14 @@ router.post('/login',
                 // sendNewLoginMail(user.email, user.username, (req.headers['x-forwarded-for'] || req.connection.remoteAddress))
                 //     .then(() => console.log("Email Sent"))
                 //     .catch((err) => console.log(err));
+                const { name, username, profilePicture } = user;
                 jwt.sign(
                     payload,
                     config.get('jwtSecret'),
                     { expiresIn: "7 days" },
                     (err, token) => {
                         if (err) throw err;
-                        return res.status(200).json({ token });
+                        return res.status(200).json({ token, name, username, profilePicture });
                     }
                 )
             } catch (err) {
