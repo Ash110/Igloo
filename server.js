@@ -41,10 +41,12 @@ app.use('/api/users', require('./routes/api/users'));
 app.use('/api/files', require('./routes/api/files'));
 app.use('/api/groups', require('./routes/api/groups'));
 app.use('/api/posts', require('./routes/api/posts'));
+app.use('/api/profiles', require('./routes/api/profiles'));
+app.use('/api/search', require('./routes/api/search'));
 
 //Static serving of images
 app.use(express.static('client/build'));
-app.use('/postimages', express.static('images/posts'));
+app.use('/posts', express.static('images/posts'));
 app.use('/profilepictures', express.static('images/profilepictures'));
 
 app.get('*', (req, res) => {
