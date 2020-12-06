@@ -60,8 +60,8 @@ router.post('/register',
                 email,
                 password,
                 username: username.toLowerCase(),
-                bio:"",
-                profilePicture : "user.png"
+                bio: "",
+                profilePicture: "user.png"
             });
             const salt = await bcrypt.genSalt(10);
             user.password = await bcrypt.hash(password, salt);
@@ -94,7 +94,6 @@ router.post('/register',
                 await session.close();
                 await User.findByIdAndDelete(user._id);
                 await Group.findByIdAndDelete(group._id);
-                await session.close()
                 return res.status(500).json({
                     errors: [{ msg: 'Unable to create account. Please try again later.' }]
                 });
@@ -153,14 +152,14 @@ router.post('/login',
                 //     .then(() => console.log("Email Sent"))
                 //     .catch((err) => console.log(err));
 
-                const {name, username, profilePicture} = user;
+                const { name, username, profilePicture } = user;
                 jwt.sign(
                     payload,
                     config.get('jwtSecret'),
                     { expiresIn: "7 days" },
                     (err, token) => {
                         if (err) throw err;
-                        return res.status(200).json({ token,  name, username, profilePicture});
+                        return res.status(200).json({ token, name, username, profilePicture });
                     }
                 )
             } catch (err) {
@@ -207,14 +206,45 @@ router.post('/login',
 //@desc    Update a user's bio
 //access   Private
 
-router.post('/updateBio',auth,async(req,res)=>{
-    const {bio} = req.body;
+router.post('/updateBio', auth, async (req, res) => {
+    const { bio } = req.body;
     try {
-        if(bio.trim()===''){
+        if (bio.trim() === '') {
             return res.status(403).send("Bio cannot be empty");
         }
-        await User.findOneAndUpdate({_id : req.id},{bio});
+        await User.findOneAndUpdate({ _id: req.id }, { bio });
         return res.status(200).send("Done");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/users/getUserDetails
+//@desc    Get user details
+//access   Private
+
+router.post('/getUserDetails', auth, async (req, res) => {
+    const { userId } = req.body;
+    try {
+        const user = await User.findById(userId);
+        const { name, username, profilePicture, friends } = user;
+        var userDetails = { name, username, profilePicture, friends: friends.length };
+        const session = neodriver.session();
+        try {
+            const neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)-[:FOLLOWS]-(u2))`);
+            userDetails.isFollowing = neo_res.records[0]._fields[0];
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to create account. Please try again later.' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        console.log(userDetails);
+        res.status(200).send(userDetails);
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");

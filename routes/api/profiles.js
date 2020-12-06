@@ -22,7 +22,6 @@ router.post('/getUserPosts', auth, async (req, res) => {
         const neo_res = await session.run(`MATCH (:User{id:"${userId}"}) -[:HAS_POST]->(p:Post)<-[:IN_FEED]-(:User{id:"${req.id}"}) RETURN p.id`);
         posts = [];
         neo_res.records.map((record) => posts.push(record._fields[0]));
-        console.log(posts);
         return res.status(200).send(posts);
     } catch (err) {
         console.log(err);

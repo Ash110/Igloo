@@ -16,7 +16,7 @@ sendWelcomeEmail = (name, email) => {
 
     mail.build(function (mailBuildError, message) {
         var dataToSend = {
-            to: 'ashwin.alaparthi@gmail.com',
+            to: email,
             message: message.toString('ascii')
         };
 

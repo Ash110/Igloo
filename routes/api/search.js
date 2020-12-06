@@ -8,14 +8,14 @@ const neodriver = require('../../neo4jconnect');
 
 const router = express.Router();
 
-//@route   POST /api/search/searchUser
+//@route   POST /api/search/searchUsers
 //@desc    Search for a user
 //access   Private
 
-router.post('/searchUser', auth, async (req, res) => {
-    const { searchString } = req.body;
+router.post('/searchUsers', auth, async (req, res) => {
+    const { searchText } = req.body;
     try {
-        const users = await Users.find({ 'name': { '$regex': `^${searchString}`, '$options': 'i' } }, { name: 1, _id: 1, profilePicture: 1, username: 1, });
+        const users = await User.find({ 'name': { '$regex': `^${searchText}`, '$options': 'i' }, '_id': { $ne: req.id } }, { name: 1, _id: 1, profilePicture: 1, username: 1, });
         console.log(users);
         return res.status(200).send(users);
     } catch (err) {
