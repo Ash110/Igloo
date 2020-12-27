@@ -13,19 +13,34 @@ const router = express.Router();
 //access   Private
 
 router.post('/getUserPosts', auth, async (req, res) => {
-    var {userId} = req.body;
+    var {userId, isUser} = req.body;
+    console.log(req.body);
     if(!userId){
         userId = req.id;
     }
-    try {
-        const session = neodriver.session();
-        const neo_res = await session.run(`MATCH (:User{id:"${userId}"}) -[:HAS_POST]->(p:Post)<-[:IN_FEED]-(:User{id:"${req.id}"}) RETURN p.id`);
-        posts = [];
-        neo_res.records.map((record) => posts.push(record._fields[0]));
-        return res.status(200).send(posts);
-    } catch (err) {
-        console.log(err);
-        return res.status(500).send("Server Error");
+    if(isUser){
+        try {
+            const session = neodriver.session();
+            const neo_res = await session.run(`MATCH (:User{id:"${userId}"}) -[:HAS_POST]->(p:Post) RETURN p.id`);
+            posts = [];
+            neo_res.records.map((record) => posts.push(record._fields[0]));
+            return res.status(200).send(posts);
+        } catch (err) {
+            console.log(err);
+            return res.status(500).send("Server Error");
+        }
+    }else{
+        try {
+            const session = neodriver.session();
+            const b = new Date().toUTCString().replace(',', '');
+            const neo_res = await session.run(`MATCH (:User{id:"${userId}"}) -[:HAS_POST]->(p:Post)<-[:IN_FEED]-(:User{id:"${req.id}"}) WHERE p.expiryDate > "${b}" RETURN p.id`);
+            posts = [];
+            neo_res.records.map((record) => posts.push(record._fields[0]));
+            return res.status(200).send(posts);
+        } catch (err) {
+            console.log(err);
+            return res.status(500).send("Server Error");
+        }
     }
 });
 

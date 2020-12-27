@@ -26,7 +26,6 @@ router.post('/uploadProfilePicture', auth, (req, res) => {
 
     //Initialise Upload
     const upload = multer({ storage }).single('profilepicture');
-
     //Start the upload
     upload(req,res,async(err) => {
         if(err){
@@ -34,10 +33,11 @@ router.post('/uploadProfilePicture', auth, (req, res) => {
             return res.status(500).send("Server Error");
         }else{
             console.log(req.file);
+            console.log(`Match (u:User {id : "${req.id}"}) SET u.profilePicture = "${imageName}"`);
             await User.findOneAndUpdate({_id : req.id, profilePicture : imageName});
             const session = neodriver.session();
             try {
-                await session.run(`Match (u:User {id : "${req.id}") SET u.profilePicture = ${imageName}`);
+                await session.run(`Match (u:User {id : "${req.id}"}) SET u.profilePicture = "${imageName}"`);
             } catch (e) {
                 console.log(e);
                 await session.close()

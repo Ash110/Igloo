@@ -37,12 +37,14 @@ app.use(bodyParser.urlencoded({ limit: "50mb", extended: true, parameterLimit: 5
 connectToDatabase();
 
 //Setting up routes
+app.use('/api/feed', require('./routes/api/feed'));
 app.use('/api/users', require('./routes/api/users'));
 app.use('/api/files', require('./routes/api/files'));
-app.use('/api/groups', require('./routes/api/groups'));
 app.use('/api/posts', require('./routes/api/posts'));
-app.use('/api/profiles', require('./routes/api/profiles'));
+app.use('/api/groups', require('./routes/api/groups'));
 app.use('/api/search', require('./routes/api/search'));
+app.use('/api/profiles', require('./routes/api/profiles'));
+app.use('/api/notifications', require('./routes/api/notifications'));
 
 //Static serving of images
 app.use(express.static('client/build'));

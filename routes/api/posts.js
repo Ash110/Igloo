@@ -29,14 +29,14 @@ router.post('/createImagePost', auth, async (req, res) => {
     }
     try {
         await Post.findOneAndUpdate({ _id: postId }, { caption, expiryDate, isText: false, disableComments, selectedGroups });
-        await User.findOneAndUpdate({ _id: postId }, { $push: { posts: [postId] } });
+        await User.findOneAndUpdate({ _id: req.id }, { $push: { posts: [postId] } });
         const session = neodriver.session();
         try {
-            await session.run(`CREATE (p:Post {id : "${postId}", type : "image"}) return p`);
-            await session.run(`MATCH (u:User{id : "${req.id}"}),(p:Post {id : "${postId}"}) CREATE (u)-[:HAS_POST {expiryDate : "${expiryDate}", publishDate:"${new Date()}"}]->(p) return u.name`);
+            await session.run(`CREATE (p:Post {id : "${postId}", type : "image", expiryDate : "${expiryDate}", publishDate:"${new Date()}" }) return p`);
+            await session.run(`MATCH (u:User{id : "${req.id}"}),(p:Post {id : "${postId}"}) CREATE (u)-[:HAS_POST]->(p) return u.name`);
             selectedGroups.map(async (groupId) => {
                 await session.run(`MATCH (g:Group{id : "${groupId}"}),(p:Post {id : "${postId}"}) CREATE (g)-[:CONTAINS]->(p) return g.id`);
-                await session.run(`MATCH (u:User)-[:MEMBER_OF]->(g:Group{id: "${groupId}"})-[:CONTAINS]->(p:Post{id:"${postId}"}) CREATE (u)-[:IN_FEED {expiryDate : "${expiryDate}", publishDate:"${new Date()}"}]->(p) return u.name`);
+                await session.run(`MATCH (u:User)-[:MEMBER_OF]->(g:Group{id: "${groupId}"})-[:CONTAINS]->(p:Post{id:"${postId}"}) CREATE (u)-[:IN_FEED]->(p) return u.name`);
             });
         } catch (e) {
             console.log(e);
@@ -71,6 +71,7 @@ router.post('/createTextPost', auth, async (req, res) => {
     if (validity == 3) {
         expiryDate.setFullYear(expiryDate.getFullYear() + 99);
     }
+    console.log(expiryDate);
     try {
         const post = new Post({
             caption, expiryDate, isText: true, disableComments, selectedGroups, creator: req.id,
@@ -79,11 +80,11 @@ router.post('/createTextPost', auth, async (req, res) => {
         await User.findOneAndUpdate({ _id: post._id }, { $push: { posts: [post._id] } });
         const session = neodriver.session();
         try {
-            await session.run(`CREATE (p:Post {id : "${post._id}", type : "text"}) return p`);
-            await session.run(`MATCH (u:User{id : "${req.id}"}),(p:Post {id : "${post._id}"}) CREATE (u)-[:HAS_POST {expiryDate : "${expiryDate}", publishDate:"${new Date()}"}]->(p) return u.name`);
+            await session.run(`CREATE (p:Post {id : "${post._id}", expiryDate : "${expiryDate}", publishDate:"${new Date()}", type : "text"}) return p`);
+            await session.run(`MATCH (u:User{id : "${req.id}"}),(p:Post {id : "${post._id}"}) CREATE (u)-[:HAS_POST]->(p) return u.name`);
             selectedGroups.map(async (groupId) => {
                 await session.run(`MATCH (g:Group{id : "${groupId}"}),(p:Post {id : "${post._id}"}) CREATE (g)-[:CONTAINS]->(p) return g.id`);
-                await session.run(`MATCH (u:User)-[:MEMBER_OF]->(g:Group{id: "${groupId}"})-[:CONTAINS]->(p:Post{id:"${post._id}"}) CREATE (u)-[:IN_FEED {expiryDate : "${expiryDate}", publishDate:"${new Date()}"}]->(p) return u.name`);
+                await session.run(`MATCH (u:User)-[:MEMBER_OF]->(g:Group{id: "${groupId}"})-[:CONTAINS]->(p:Post{id:"${post._id}"}) CREATE (u)-[:IN_FEED]->(p) return u.name`);
             });
         } catch (e) {
             console.log(e);

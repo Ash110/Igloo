@@ -85,7 +85,7 @@ router.post('/register',
             }
             const session = neodriver.session();
             try {
-                await session.run(`CREATE (u:User {id : "${user._id}", name : "${user.name}"}) RETURN u`);
+                await session.run(`CREATE (u:User {id : "${user._id}", name : "${user.name}", profilePicture: "user.png", username :"${user.username}"}) RETURN u`);
                 await session.run(`CREATE (g:Group {id : "${group._id}", name : "${group.name}", description: "Share with everyone who follows you"}) RETURN g`);
                 await session.run(`MATCH (u), (g) WHERE u.id = "${user._id}" AND g.id = "${group._id}" CREATE (u)-[:HAS_GROUP]->(g)`);
                 await session.run(`MATCH (u), (g) WHERE u.id = "${user._id}" AND g.id = "${group._id}" CREATE (u)-[:MEMBER_OF]->(g)`);
@@ -234,17 +234,181 @@ router.post('/getUserDetails', auth, async (req, res) => {
         try {
             const neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)-[:FOLLOWS]-(u2))`);
             userDetails.isFollowing = neo_res.records[0]._fields[0];
+            if (!userDetails.isFollowing) {
+                try {
+                    const neo_res2 = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)<-[:HAS_REQUESTED_FOLLOW]-(u2))`);
+                    userDetails.hasRequestedFollow = neo_res2.records[0]._fields[0];
+                } catch (err) {
+                    console.log(e);
+                    await session.close()
+                    return res.status(500).json({
+                        errors: [{ msg: 'Unable to fetch user following details' }]
+                    });
+                }
+            }
         } catch (e) {
             console.log(e);
             await session.close()
             return res.status(500).json({
-                errors: [{ msg: 'Unable to create account. Please try again later.' }]
+                errors: [{ msg: 'Unable to fetch user following details' }]
             });
         } then = async () => {
             await session.close()
         }
-        console.log(userDetails);
         res.status(200).send(userDetails);
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/users/followUser
+//@desc    Follow user
+//access   Private
+
+router.post('/followUser', auth, async (req, res) => {
+    const { userId } = req.body;
+    try {
+        const session = neodriver.session();
+        try {
+            await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" CREATE (u2)-[:HAS_REQUESTED_FOLLOW]->(u1) return u1.name`);
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to request' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        res.status(200).send("Request sent!");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/users/cancelFollowRequest
+//@desc    Follow user
+//access   Private
+
+router.post('/cancelFollowRequest', auth, async (req, res) => {
+    const { userId } = req.body;
+    try {
+        const session = neodriver.session();
+        try {
+            await session.run(`MATCH (u2)-[hrf:HAS_REQUESTED_FOLLOW]->(u1) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" DELETE hrf`);
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to request' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        res.status(200).send("Request sent!");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/users/acceptFollowRequest
+//@desc    Follow user
+//access   Private
+
+router.post('/acceptFollowRequest', auth, async (req, res) => {
+    const { userId } = req.body;
+    try {
+        const session = neodriver.session();
+        try {
+            await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" CREATE (u1)-[:FOLLOWS]->(u2) return u1.name`);
+            console.log("Followed");
+            await session.run(`Match (u2:User{id : "${userId}"}),(u:User{id : "${req.id}"}),(g:Group{name:'All Followers'}) WHERE (u)-[:HAS_GROUP]->(g) CREATE (u2)-[:MEMBER_OF]->(g) return u`);
+            await session.run(`Match (u2:User{id : "${userId}"}),(u:User{id : "${req.id}"}),(g:Group{name:'All Followers'}) WHERE (u2)-[:HAS_GROUP]->(g) CREATE (u)-[:MEMBER_OF]->(g) return u`);
+            await session.run(`Match (u2:User{id : "${userId}"}),(u:User{id : "${req.id}"}),(g:Group{name:'All Followers'}),(p:Post) WHERE ((u)-[:HAS_GROUP]->(g)-[:CONTAINS]-(p)) CREATE (u2)-[:IN_FEED]->(p) return u`);
+            await session.run(`Match (u2:User{id : "${userId}"}),(u:User{id : "${req.id}"}),(g:Group{name:'All Followers'}),(p:Post) WHERE ((u2)-[:HAS_GROUP]->(g)-[:CONTAINS]-(p)) CREATE (u)-[:IN_FEED]->(p) return u`);
+            await session.run(`MATCH (u1{id : "${userId}"})-[hrf:HAS_REQUESTED_FOLLOW]-(u2{id:"${req.id}"}) DELETE hrf`);
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to request' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        await User.findOneAndUpdate({ _id: req.id }, { $push: { friends: [userId] } });
+        await User.findOneAndUpdate({ _id: userId }, { $push: { friends: [req.id] } });
+        res.status(200).send("Followed");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/users/rejectFollowRequest
+//@desc    Follow user
+//access   Private
+
+router.post('/rejectFollowRequest', auth, async (req, res) => {
+    const { userId } = req.body;
+    try {
+        const session = neodriver.session();
+        try {
+            await session.run(`MATCH (u1{id : "${userId}"})-[hrf:HAS_REQUESTED_FOLLOW]-(u2{id:"${req.id}"}) DELETE hrf`);
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to request' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        res.status(200).send("Deleted");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/users/unfollowUser
+//@desc    Follow user
+//access   Private
+
+router.post('/unfollowUser', auth, async (req, res) => {
+    const { userId } = req.body;
+    try {
+        const session = neodriver.session();
+        try {
+            await session.run(`MATCH (u1)-[f:FOLLOWS]-(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" DELETE f`);
+            await session.run(`Match (u:User{id : "${req.id}"})-[:HAS_GROUP]-(g:Group)-[m:MEMBER_OF]-(u2:User{id : "${userId}"})  DELETE m`);
+            await session.run(`Match (u:User{id : "${userId}"})-[:HAS_GROUP]-(g:Group)-[m:MEMBER_OF]-(u2:User{id : "${req.id}"})  DELETE m`);
+            await session.run(`Match (u:User{id : "${req.id}"})-[:HAS_POST]-(p:Post)-[i:IN_FEED]-(u2:User{id : "${userId}"})  DELETE i`);
+            await session.run(`Match (u:User{id : "${userId}"})-[:HAS_POST]-(p:Post)-[i:IN_FEED]-(u2:User{id : "${req.id}"})  DELETE i`);
+            // Now remove all the posts too 
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to request' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        await User.findByIdAndUpdate(req.id,
+            { $pullAll: { friends: [userId] } },
+            { new: true },
+            function (err, data) { }
+        );
+        await User.findByIdAndUpdate(userId,
+            { $pullAll: { friends: [req.id] } },
+            { new: true },
+            function (err, data) { }
+        );
+        res.status(200).send("Unfollowed");
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
