@@ -15,7 +15,8 @@ const router = express.Router();
 router.post('/getFeed', auth, async (req, res) => {
     try {
         const session = neodriver.session();
-        const b = new Date().toUTCString().replace(',', '');
+        const b = new Date().toISOString();
+        console.log(`MATCH (:User{id:"${req.id}"})-[:IN_FEED]->(p:Post) WHERE p.expiryDate > "${b}" RETURN p.id`);
         const neo_res = await session.run(`MATCH (:User{id:"${req.id}"})-[:IN_FEED]->(p:Post) WHERE p.expiryDate > "${b}" RETURN p.id`);
         posts = [];
         neo_res.records.map((record) => posts.push(record._fields[0]));
@@ -27,3 +28,4 @@ router.post('/getFeed', auth, async (req, res) => {
 });
 
 module.exports = router;
+
