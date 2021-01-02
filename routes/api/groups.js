@@ -77,11 +77,58 @@ router.post('/getGroupMembers', auth, async (req, res) => {
             neo_res.records.map((friend) => friends.push(friend._fields));
             neo_res = await session.run(`MATCH (u:User)-[:MEMBER_OF]-(g:Group{id : "${groupID}"}) RETURN u.id, u.name, u.profilePicture`);
             neo_res.records.map((member) => groupMembers.push(member._fields[0]));
-            res.status(200).send({friends, groupMembers});
+            res.status(200).send({ friends, groupMembers });
         } catch (e) {
             console.log(e);
             await session.close()
             return res.status(500).send("Unable to fetch members");
+        } then = async () => {
+            await session.close()
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Internal Error");
+    }
+});
+
+//@route   POST /api/groups/updateGroup
+//@desc    Get friends of user and members of a group
+//access   Private
+
+router.post('/updateGroup', auth, async (req, res) => {
+    const { groupId, groupMembers, nameHasChanged, descHasChanged, groupName, groupDesc } = req.body;
+    try {
+        console.log(nameHasChanged, descHasChanged);
+        const session = neodriver.session();
+        try {
+            if (nameHasChanged) {
+                await Group.findOneAndUpdate({ _id: groupId }, { name: groupName });
+                await session.run(`MATCH (g:Group {id : "${groupId}"}) SET g.name = "${groupName}"`);
+            }
+            if (descHasChanged) {
+                await Group.findOneAndUpdate({ _id: groupId }, { description: groupDesc });
+                await session.run(`MATCH (g:Group {id : "${groupId}"}) SET g.description = "${groupDesc}"`);
+            }
+            var existingMembers = []
+            neo_res = await session.run(`MATCH (u:User)-[:MEMBER_OF]-(g:Group{id : "${groupId}"}) RETURN u.id, u.name, u.profilePicture`);
+            neo_res.records.map((member) => existingMembers.push(member._fields[0]));
+            var membersToRemove = existingMembers.filter((member) => !groupMembers.includes(member));
+            membersToRemove.map(async (member) => {
+                await session.run(`MATCH (u:User{id : "${member}"})-[mo:MEMBER_OF]-(g:Group{id : "${groupId}"}) DELETE mo`);
+                await session.run(`MATCH (u:User{id : "${member}"})-[if:IN_FEED]-(p:Post)-[c:CONTAINS]-(g:Group{id : "${groupId}"}) DELETE if`);
+            });
+            var membersToAdd = groupMembers.filter((member) => !existingMembers.includes(member));
+            membersToAdd.push(req.id);
+            console.log(membersToAdd);
+            membersToAdd.map(async (member) => {
+                await session.run(`MATCH (u:User{id : "${member}"}), (g:Group{id : "${groupId}"}) MERGE(u)-[:MEMBER_OF]->(g)`);
+                await session.run(`MATCH (u:User{id : "${member}"}),(p:Post)-[c:CONTAINS]-(g:Group{id : "${groupId}"}) MERGE (u)-[:IN_FEED]->(p)`);
+            });
+            res.status(200).send("Done");
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to update members");
         } then = async () => {
             await session.close()
         }
