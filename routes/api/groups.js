@@ -8,7 +8,7 @@ const neodriver = require('../../neo4jconnect');
 const router = express.Router();
 
 //@route   POST /api/groups/getGroups
-//@desc    Upload a new Profile Picture
+//@desc    Get all groups of a user
 //access   Private
 
 router.post('/getGroups', auth, async (req, res) => {
@@ -28,7 +28,7 @@ router.post('/getGroups', auth, async (req, res) => {
 });
 
 //@route   POST /api/groups/createGroup
-//@desc    Upload a new Profile Picture
+//@desc    Create a new group
 //access   Private
 
 router.post('/createGroup', auth, async (req, res) => {
@@ -53,6 +53,35 @@ router.post('/createGroup', auth, async (req, res) => {
             console.log(e);
             await session.close()
             return res.status(500).send("Unable to create group");
+        } then = async () => {
+            await session.close()
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Internal Error");
+    }
+});
+
+//@route   POST /api/groups/getGroupMembers
+//@desc    Get friends of user and members of a group
+//access   Private
+
+router.post('/getGroupMembers', auth, async (req, res) => {
+    const { groupID } = req.body;
+    try {
+        var friends = [];
+        var groupMembers = [];
+        const session = neodriver.session();
+        try {
+            var neo_res = await session.run(`MATCH (u1:User {id : "${req.id}"})-[:FOLLOWS]-(u2:User) RETURN u2.id, u2.name, u2.profilePicture`);
+            neo_res.records.map((friend) => friends.push(friend._fields));
+            neo_res = await session.run(`MATCH (u:User)-[:MEMBER_OF]-(g:Group{id : "${groupID}"}) RETURN u.id, u.name, u.profilePicture`);
+            neo_res.records.map((member) => groupMembers.push(member._fields[0]));
+            res.status(200).send({friends, groupMembers});
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to fetch members");
         } then = async () => {
             await session.close()
         }
