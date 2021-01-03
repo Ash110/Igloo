@@ -84,8 +84,11 @@ router.post('/createTextPost', auth, async (req, res) => {
             await session.run(`CREATE (p:Post {id : "${post._id}", expiryDate : "${expiryDate}", publishDate:"${new Date().toISOString()}", type : "text"}) return p`);
             await session.run(`MATCH (u:User{id : "${req.id}"}),(p:Post {id : "${post._id}"}) CREATE (u)-[:HAS_POST]->(p) return u.name`);
             selectedGroups.map(async (groupId) => {
-                await session.run(`MATCH (g:Group{id : "${groupId}"}),(p:Post {id : "${post._id}"}) CREATE (g)-[:CONTAINS]->(p) return g.id`);
-                await session.run(`MATCH (u:User)-[:MEMBER_OF]->(g:Group{id: "${groupId}"})-[:CONTAINS]->(p:Post{id:"${post._id}"}) MERGE (u)-[:IN_FEED]->(p) return u.name`);
+                const localsession = neodriver.session();
+                console.log(groupId);
+                await localsession.run(`MATCH (g:Group{id : "${groupId}"}),(p:Post {id : "${post._id}"}) CREATE (g)-[:CONTAINS]->(p) return g.id`);
+                await localsession.run(`MATCH (u:User)-[:MEMBER_OF]->(g:Group{id: "${groupId}"})-[:CONTAINS]->(p:Post{id:"${post._id}"}) MERGE (u)-[:IN_FEED]->(p) return u.name`);
+                await localsession.close()
             });
         } catch (e) {
             console.log(e);
