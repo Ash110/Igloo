@@ -4,6 +4,7 @@ const User = require('../../models/User');
 const Group = require('../../models/Group');
 const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
+const { group } = require('console');
 
 const router = express.Router();
 
@@ -67,8 +68,13 @@ router.post('/createGroup', auth, async (req, res) => {
 //access   Private
 
 router.post('/getGroupMembers', auth, async (req, res) => {
-    const { groupID } = req.body;
+    let { groupID } = req.body;
+    groupID = (groupID.replace(/\"/g, ""))
+    var ObjectId = require('mongoose').Types.ObjectId;
     try {
+        if (!ObjectId(groupID)) {
+            res.status(401).send("Not a valid group");
+        }
         var friends = [];
         var groupMembers = [];
         const session = neodriver.session();
@@ -96,9 +102,13 @@ router.post('/getGroupMembers', auth, async (req, res) => {
 //access   Private
 
 router.post('/updateGroup', auth, async (req, res) => {
-    const { groupId, groupMembers, nameHasChanged, descHasChanged, groupName, groupDesc } = req.body;
+    let { groupId, groupMembers, nameHasChanged, descHasChanged, groupName, groupDesc } = req.body;
     try {
-        console.log(nameHasChanged, descHasChanged);
+        groupId = (groupId.replace(/\"/g, ""))
+        var ObjectId = require('mongoose').Types.ObjectId;
+        if (!ObjectId(groupId)) {
+            res.status(401).send("Not a valid group");
+        }
         const session = neodriver.session();
         try {
             if (nameHasChanged) {
@@ -119,7 +129,6 @@ router.post('/updateGroup', auth, async (req, res) => {
             });
             var membersToAdd = groupMembers.filter((member) => !existingMembers.includes(member));
             membersToAdd.push(req.id);
-            console.log(membersToAdd);
             membersToAdd.map(async (member) => {
                 await session.run(`MATCH (u:User{id : "${member}"}), (g:Group{id : "${groupId}"}) MERGE(u)-[:MEMBER_OF]->(g)`);
                 await session.run(`MATCH (u:User{id : "${member}"}),(p:Post)-[c:CONTAINS]-(g:Group{id : "${groupId}"}) MERGE (u)-[:IN_FEED]->(p)`);
@@ -129,6 +138,43 @@ router.post('/updateGroup', auth, async (req, res) => {
             console.log(e);
             await session.close()
             return res.status(500).send("Unable to update members");
+        } then = async () => {
+            await session.close()
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Internal Error");
+    }
+});
+
+//@route   POST /api/groups/deleteGroup
+//@desc    Delete group
+//access   Private
+
+router.post('/deleteGroup', auth, async (req, res) => {
+    const { groupId} = req.body;
+    console.log(groupId);
+    try {
+        var ObjectId = require('mongoose').Types.ObjectId;
+        if (!ObjectId(groupId)) {
+            res.status(401).send("Not a valid group");
+        }
+        const session = neodriver.session();
+        try {
+            await session.run(`MATCH (g:Group{id : "${groupId}"})-[:CONTAINS]->(p:Post)<-[if:IN_FEED]-(u:User) DELETE if`);
+            await session.run(`MATCH (g:Group{id : "${groupId}"}) DETACH DELETE g`);
+            await Group.findByIdAndDelete(groupId);
+            User.findOneAndUpdate(
+                { _id: req.id },
+                { $pullAll: { groups: [groupId] } },
+                { new: true },
+                function (err, data) { }
+            );
+            res.status(200).send("Done");
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to delete group");
         } then = async () => {
             await session.close()
         }
