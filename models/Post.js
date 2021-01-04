@@ -19,9 +19,9 @@ const PostModel = new Schema({
     },
     image: {
         type: String,
-    },  
-    disableComments : {
-        type : Boolean,
+    },
+    disableComments: {
+        type: Boolean,
     },
     caption: {
         type: String,
@@ -31,7 +31,7 @@ const PostModel = new Schema({
         required: true,
         default: new Date()
     },
-    expiryDate : {
+    expiryDate: {
         type: Date,
         required: true,
         default: setExpiryDate()
@@ -39,11 +39,15 @@ const PostModel = new Schema({
     selectedGroups: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Group',
-    }], 
+    }],
     likes: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-    }],   
+    }],
+    comments: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comment',
+    }],
 });
 
 module.exports = Post = mongoose.model('Post', PostModel);

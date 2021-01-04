@@ -164,6 +164,7 @@ router.post('/likePost', auth, async (req, res) => {
             } then = async () => {
                 await session.close()
             }
+            await Post.findOneAndUpdate({ _id: postId }, { $push: { likes: [req.id] } });
             return res.status(200).send("Done");
         }
         else {
@@ -194,6 +195,12 @@ router.post('/unlikePost', auth, async (req, res) => {
             } then = async () => {
                 await session.close()
             }
+            Post.findOneAndUpdate(
+                { _id: postId },
+                { $pullAll: { likes: [req.id] } },
+                { new: true },
+                function (err, data) { }
+            );
             return res.status(200).send("Done");
         }
         else {
