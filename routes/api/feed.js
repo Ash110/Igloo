@@ -20,6 +20,7 @@ router.post('/getFeed', auth, async (req, res) => {
         const neo_res = await session.run(`MATCH (:User{id:"${req.id}"})-[:IN_FEED]->(p:Post) WHERE p.expiryDate > "${b}" RETURN p.id`);
         posts = [];
         neo_res.records.map((record) => posts.push(record._fields[0]));
+        
         return res.status(200).send(posts);
     } catch (err) {
         console.log(err);

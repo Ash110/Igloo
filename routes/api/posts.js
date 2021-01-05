@@ -5,6 +5,7 @@ const Post = require('../../models/Post');
 const Group = require('../../models/Group');
 const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
+const { response } = require('express');
 
 const router = express.Router();
 
@@ -113,13 +114,14 @@ router.post('/getPostDetails', auth, async (req, res) => {
     try {
         const post = await Post.findById(postId).populate({ path: 'creator', 'select': 'name profilePicture username' });
         if (post) {
-            const { isText, image, disableComments, caption, publishTime, likes, creator } = post;
+            const { isText, image, disableComments, caption, publishTime, likes, creator, comments } = post;
             var responsePost = { isText, image, disableComments, caption, publishTime, creator, }
             if (creator._id.toString() === req.id.toString()) {
                 responsePost.isCreator = true;
             } else {
                 responsePost.isCreator = false;
             }
+            responsePost.comments = post.comments ? post.comments.length : 0;
             responsePost.likes = likes.length;
             responsePost.hasLiked = false;
             const session = neodriver.session();

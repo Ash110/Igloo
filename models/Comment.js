@@ -11,7 +11,10 @@ const CommentModel = new Schema({
     parentPost: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post',
-        required: true
+    },
+    parentComment: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comment',
     },
     image: {
         type: String,
@@ -24,6 +27,10 @@ const CommentModel = new Schema({
         required: true,
         default: new Date()
     },
+    replies: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Comment',
+    }],
     isReply: {
         type: Boolean,
         default: false,
