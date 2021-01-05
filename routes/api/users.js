@@ -415,4 +415,22 @@ router.post('/unfollowUser', auth, async (req, res) => {
     }
 });
 
+//@route   /api/users/registerToken
+//@desc    Register a new token
+//access   Private
+
+router.post('/registerToken', auth, async (req, res) => {
+    const { token } = req.body;
+    try {
+        const user = await User.findById(req.id).select('notificationTokens');
+        let tokenArray = user.notificationTokens ? user.notificationTokens : [];
+        tokenArray.push(token);
+        await User.findOneAndUpdate({ _id: req.id }, { notificationTokens: tokenArray });
+        res.status(200).send("Done");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 module.exports = router;

@@ -31,7 +31,7 @@ const UserModel = new Schema({
     },
     bio: {
         type: String,
-        default : "",
+        default: "",
     },
     mutedUsers: [{
         type: String
@@ -83,6 +83,9 @@ const UserModel = new Schema({
         type: String,
         default: null
     },
+    notificationTokens: [{
+        type: String,
+    }],
 });
 
 module.exports = User = mongoose.model('User', UserModel);
