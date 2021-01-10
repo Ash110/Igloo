@@ -26,6 +26,31 @@ const PostModel = new Schema({
     caption: {
         type: String,
     },
+    isSong: {
+        type: Boolean,
+    },
+    songDetails: {
+        songName: {
+            type: String,
+        },
+        songArtists: [
+            {
+                type: String,
+            }
+        ],
+        previewUrl: {
+            type: String,
+        },
+        songImage: {
+            type: String,
+        }
+    },
+    isMovie: {
+        type: Boolean,
+    },
+    imdbId:{
+        type: String,
+    },
     publishTime: {
         type: Date,
         required: true,

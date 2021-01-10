@@ -4,5 +4,6 @@
     "neo4juser": "neo4j",
     "neo4jpassword": "neobender",
     "jwtSecret": "366890e1037391ea49004c94a46d6b585fe5c4d649bada3f0054ac09dc569a6b",
-    "mailgun-api": "key-bfa1ce2a9be1040fb776a1f7afd622f9"
+    "mailgun-api": "key-bfa1ce2a9be1040fb776a1f7afd622f9",
+    "omdbAPIKey": "66710f35"
 }
