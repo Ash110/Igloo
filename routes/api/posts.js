@@ -356,4 +356,70 @@ router.post('/unlikePost', auth, async (req, res) => {
     }
 });
 
+//@route   POST /api/posts/deletePost
+//@desc    Like a post
+//access   Private
+
+router.post('/deletePost', auth, async (req, res) => {
+    const { postId } = req.body;
+    try {
+        const post = await Post.findById(postId);
+        if (post) {
+            if (post.comments.length > 0) {
+                post.comments.map(async(commentId) => {
+                    const comment = await Comment.findById(commentId).select('replies');
+                    comment.replies.map(async (reply) => {
+                        await Comment.findOneAndUpdate(
+                            { _id: commentId },
+                            { $pullAll: { replies: [reply] } },
+                            { new: true },
+                            function (err, data) { }
+                        );
+                        await Comment.findByIdAndDelete(reply);
+                        const replysession = neodriver.session();
+                        try {
+                            await replysession.run(`Match (c:Comment {id : "${reply}"}) DETACH DELETE c`);
+                            await replysession.close()
+                        } catch (e) {
+                            console.log(e);
+                            await replysession.close()
+                        }
+                    });
+                    const session = neodriver.session();
+                    try {
+                        await session.run(`Match (c:Comment {id : "${commentId}"}) DETACH DELETE c`);
+                        await session.close()
+                    } catch (e) {
+                        console.log(e);
+                        await session.close()
+                    }
+                    await Comment.findByIdAndDelete(commentId);
+                });
+            }
+            const session = neodriver.session();
+            await User.findOneAndUpdate(
+                { _id: req.id },
+                { $pullAll: { posts: [postId] } },
+                { new: true },
+                function (err, data) { }
+            );
+            try {
+                await session.run(`Match (p:Post {id : "${postId}"}) DETACH DELETE p`);
+                await session.close()
+            } catch (e) {
+                console.log(e);
+                await session.close()
+            }
+            await Post.findByIdAndDelete(postId);
+            return res.status(200).send("Deleted");
+        }
+        else {
+            return res.status(404).send("Post not found")
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 module.exports = router;
