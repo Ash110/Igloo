@@ -5,6 +5,7 @@ const express = require('express');
 const User = require('../../models/User');
 const Post = require('../../models/Post');
 const Group = require('../../models/Group');
+const LocalIMDb = require('../../models/LocalIMDb');
 const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
 
@@ -250,11 +251,31 @@ router.post('/getPostDetails', auth, async (req, res) => {
                 await session.close()
             }
             if (isMovie) {
-                var imdbDetails = await axios.get(`http://www.omdbapi.com/?apikey=${config.get('omdbAPIKey')}&i=${imdbId}`);
-                // console.log(imdbDetails);
-                const { Title, Year, Genre, Writers, Actors, Plot, Language, Country, Poster, imdbRating } = imdbDetails.data;
-                responsePost.movieDetails = { Title, Year, Genre, Writers, Actors, Plot, Language, Country, Poster, imdbRating };
-                console.log(responsePost)
+                const localIMDbSearch = await LocalIMDb.findOne({ imdbId });
+                if (localIMDbSearch) {
+                    console.log("Getting it locally");
+                    const { Title, Year, Genre, Actors, Plot, Language, Country, Poster, imdbRating } = localIMDbSearch;
+                    responsePost.movieDetails = { Title, Year, Genre, Actors, Plot, Language, Country, Poster, imdbRating };
+                } else {
+                    console.log("Getting it from IMDB");
+                    var imdbDetails = await axios.get(`http://www.omdbapi.com/?apikey=${config.get('omdbAPIKey')}&i=${imdbId}`);
+                    // console.log(imdbDetails);
+                    const { Title, Year, Genre, Actors, Plot, Language, Country, Poster, imdbRating } = imdbDetails.data;
+                    responsePost.movieDetails = { Title, Year, Genre, Actors, Plot, Language, Country, Poster, imdbRating };
+                    const localImdbItem = new LocalIMDb({
+                        imdbId,
+                        Title,
+                        Year,
+                        Genre,
+                        Actors,
+                        Plot,
+                        Language,
+                        Country,
+                        Poster,
+                        imdbRating
+                    });
+                    await localImdbItem.save();
+                }
             }
             return res.status(200).send(responsePost);
         }
