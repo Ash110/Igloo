@@ -11,6 +11,31 @@ const neodriver = require('../../neo4jconnect');
 
 const router = express.Router();
 
+//@route   POST /api/spaces/getAllRooms
+//@desc    Fetch all rooms
+//access   Private
+
+router.post('/getAllRooms', auth, async (req, res) => {
+    try {
+        const session = neodriver.session();
+        let rooms = [];
+        try {
+            const neo_res = await session.run(`MATCH (u:User{id : "${req.id}"})-[:CAN_ENTER_ROOM]->(r:Room) return r.id`);
+            neo_res.records.map((room) => rooms.push(room._fields[0]));
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to fetch rooms");
+        } then = async () => {
+            await session.close()
+        }
+        return res.status(200).send({ rooms });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 //@route   POST /api/spaces/createDiscussionRoom
 //@desc    Create a discussion room
 //access   Private
@@ -46,5 +71,27 @@ router.post('/createDiscussionRoom', auth, async (req, res) => {
         return res.status(500).send("Server Error");
     }
 });
+
+//@route   POST /api/spaces/getRoomDetails
+//@desc    Fetch all rooms
+//access   Private
+
+router.post('/getRoomDetails', auth, async (req, res) => {
+    const { roomId } = req.body;
+    try {
+        const room = await Space.findById(roomId)
+            .populate('creator', 'name profilePicture')
+            .select('name description creator')
+        if (room) {
+            return res.status(200).send({ room });
+        } else {
+            return res.status(404).send("Room not found");
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 
 module.exports = router;

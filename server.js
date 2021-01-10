@@ -43,6 +43,7 @@ app.use('/api/files', require('./routes/api/files'));
 app.use('/api/posts', require('./routes/api/posts'));
 app.use('/api/groups', require('./routes/api/groups'));
 app.use('/api/search', require('./routes/api/search'));
+app.use('/api/spaces', require('./routes/api/spaces'));
 app.use('/api/comments', require('./routes/api/comments'));
 app.use('/api/profiles', require('./routes/api/profiles'));
 app.use('/api/notifications', require('./routes/api/notifications'));
