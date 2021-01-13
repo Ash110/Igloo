@@ -262,6 +262,34 @@ router.post('/getUserDetails', auth, async (req, res) => {
     }
 });
 
+//@route   /api/users/getUserFriends
+//@desc    Get user details
+//access   Private
+
+router.post('/getUserFriends', auth, async (req, res) => {
+    try {
+        const session = neodriver.session();
+        let friends = [];
+        try {
+            const neo_res = await session.run(`MATCH (u1{id : "${req.id}"})-[:FOLLOWS]-(u2)  RETURN u2.profilePicture, u2.name, u2.username`);
+            // console.log();
+            neo_res.records.map((friend) => friends.push(friend._fields));
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to fetch user following details' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        res.status(200).send({ friends });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 //@route   /api/users/followUser
 //@desc    Follow user
 //access   Private

@@ -42,14 +42,15 @@ router.post('/getAllRooms', auth, async (req, res) => {
 //access   Private
 
 router.post('/createDiscussionRoom', auth, async (req, res) => {
-    const { name, description, selectedGroups } = req.body;
+    const { name, description, selectedFriends } = req.body;
+    console.log(selectedFriends)
     try {
         if (!name) {
             return res.status(403).send("Room must need a name");
         }
         let uid = 0;
         let role = RtcRole.PUBLISHER;
-        let expireTime = 3 * 3600;
+        let expireTime = 24 * 7 * 3600;
         const currentTime = Math.floor(Date.now() / 1000);
         const privilegeExpireTime = currentTime + expireTime;
         const token = RtcTokenBuilder.buildTokenWithUid(config.get('agoraAppID'), config.get('agoraAppCertificate'), name, uid, role, privilegeExpireTime);
@@ -65,9 +66,11 @@ router.post('/createDiscussionRoom', auth, async (req, res) => {
         try {
             await session.run(`CREATE (r:Room {id : "${room._id}", type : "discussion", publishDate:"${new Date().toISOString()}" }) return r`);
             await session.run(`MATCH (u:User{id : "${req.id}"}),(r:Room {id : "${room._id}"}) CREATE (u)-[:HAS_ROOM]->(r) return u.name`);
-            selectedGroups.map(async (groupId) => {
-                await session.run(`MATCH (g:Group{id : "${groupId}"}),(r:Room {id : "${room._id}"}) CREATE (g)-[:CONTAINS_ROOM]->(r) return g.id`);
-                await session.run(`MATCH (u:User)-[:MEMBER_OF]->(g:Group{id: "${groupId}"})-[:CONTAINS_ROOM]->(r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
+            await session.run(`MATCH (u:User{id : "${req.id}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
+            selectedFriends.map(async (friend) => {
+                const usersession = neodriver.session();
+                await usersession.run(`MATCH (u:User{username : "${friend}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
+                await usersession.close()
             });
         } catch (e) {
             console.log(e);
