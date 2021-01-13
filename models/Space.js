@@ -27,6 +27,10 @@ const SpaceModel = new Schema({
         type: String,
         default: 'discussion',
         required: true,
+    },
+    roomToken: {
+        type: String,
+        required: true,
     }
 });
 

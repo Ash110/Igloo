@@ -8,6 +8,7 @@ const Group = require('../../models/Group');
 const Space = require('../../models/Space');
 const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
+const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
 
 const router = express.Router();
 
@@ -43,11 +44,21 @@ router.post('/getAllRooms', auth, async (req, res) => {
 router.post('/createDiscussionRoom', auth, async (req, res) => {
     const { name, description, selectedGroups } = req.body;
     try {
+        if (!name) {
+            return res.status(403).send("Room must need a name");
+        }
+        let uid = 0;
+        let role = RtcRole.PUBLISHER;
+        let expireTime = 3 * 3600;
+        const currentTime = Math.floor(Date.now() / 1000);
+        const privilegeExpireTime = currentTime + expireTime;
+        const token = RtcTokenBuilder.buildTokenWithUid(config.get('agoraAppID'), config.get('agoraAppCertificate'), name, uid, role, privilegeExpireTime);
         const room = new Space({
             name,
             description,
             creator: req.id,
             roomType: 'discussion',
+            roomToken: token,
         });
         await room.save();
         const session = neodriver.session();
@@ -65,7 +76,18 @@ router.post('/createDiscussionRoom', auth, async (req, res) => {
         } then = async () => {
             await session.close()
         }
-        return res.status(200).send("Done");
+        try {
+            await axios.post(`${config.get('chatServerUrl')}/registerNewRoom`, {
+                roomId: room._id,
+            });
+        } catch (err) {
+            console.log("Failed to reach chat server");
+            console.log(err);
+        }
+        return res.status(200).send({
+            roomId: room._id,
+            roomToken: token,
+        });
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
@@ -81,9 +103,14 @@ router.post('/getRoomDetails', auth, async (req, res) => {
     try {
         const room = await Space.findById(roomId)
             .populate('creator', 'name profilePicture')
-            .select('name description creator')
+            .select('name description creator roomToken')
         if (room) {
-            return res.status(200).send({ room });
+            const memberDetails = await axios.post(`${config.get('chatServerUrl')}/getRoomMembers`, {
+                roomId,
+            });
+            // console.log(memberDetails.data);
+            // room.memberDetails = memberDetails.data;
+            return res.status(200).send({ room, memberDetails: memberDetails.data });
         } else {
             return res.status(404).send("Room not found");
         }
