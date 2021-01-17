@@ -474,13 +474,33 @@ router.post('/changeUsername', auth, async (req, res) => {
         return res.status(403).send("Username can only contain a-z A-Z 0-9, underscore (_) and full stop (.)");
     }
     try {
-        const user = await User.findOne({ username : username.toLowerCase() });
+        const user = await User.findOne({ username: username.toLowerCase() });
         if (user) {
             return res.status(403).send("Username is taken. Please try another.");
         } else {
             await User.findOneAndUpdate({ _id: req.id }, { username: username.toLowerCase() });
             return res.status(200).send();
         }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+//@route   /api/users/changeName
+//@desc    Register a new token
+//access   Private
+
+router.post('/changeName', auth, async (req, res) => {
+    const { name } = req.body;
+    if (name.trim() == "") {
+        return res.status(403).send("Name cannot be empty");
+    }
+    if (name.length > 50) {
+        return res.status(403).send("Name cannot be greater than 50 characters");
+    }
+    try {
+        await User.findOneAndUpdate({ _id: req.id }, { name: name });
+        return res.status(200).send();
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
