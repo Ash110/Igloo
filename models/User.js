@@ -29,6 +29,11 @@ const UserModel = new Schema({
         required: true,
         default: "user.png"
     },
+    headerImage: {
+        type: String,
+        required: true,
+        default: "default.png"
+    },
     bio: {
         type: String,
         default: "",

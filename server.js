@@ -52,6 +52,7 @@ app.use('/api/notifications', require('./routes/api/notifications'));
 app.use(express.static('client/build'));
 app.use('/posts', express.static('images/posts'));
 app.use('/profilepictures', express.static('images/profilepictures'));
+app.use('/headerimages', express.static('images/headerimages'));
 
 app.get('*', (req, res) => {
     try {

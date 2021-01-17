@@ -50,8 +50,49 @@ router.post('/uploadProfilePicture', auth, (req, res) => {
     });
 });
 
-//@route   POST /api/files/uploadProfilePicture
-//@desc    Upload a new Profile Picture
+//@route   POST /api/files/uploadHeaderImage
+//@desc    Upload a new Header Image
+//access   Private
+
+router.post('/uploadHeaderImage', auth, (req, res) => {
+    //Set storage engine
+    var imageName = '';
+    const storage = multer.diskStorage({
+        destination: './images/headerimages/',
+        filename: (req, file, callback) => {
+            imageName = req.id + path.extname(file.originalname);
+            callback(null, req.id + path.extname(file.originalname));
+        }
+    })
+
+    //Initialise Upload
+    const upload = multer({ storage }).single('headerimage');
+    //Start the upload
+    upload(req, res, async (err) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).send("Server Error");
+        } else {
+            console.log(req.file);
+            console.log(`Match (u:User {id : "${req.id}"}) SET u.headerImage = "${imageName}"`);
+            await User.findOneAndUpdate({ _id: req.id, headerImage: imageName });
+            const session = neodriver.session();
+            try {
+                await session.run(`Match (u:User {id : "${req.id}"}) SET u.headerImage = "${imageName}"`);
+            } catch (e) {
+                console.log(e);
+                await session.close()
+                return res.status(500).send("Unable to update profile picture");
+            } then = async () => {
+                await session.close()
+            }
+            return res.status(200).send(imageName);
+        }
+    });
+});
+
+//@route   POST /api/files/uploadImagePost
+//@desc    Upload a new Image Post
 //access   Private
 
 router.post('/uploadImagePost', auth, (req, res) => {
