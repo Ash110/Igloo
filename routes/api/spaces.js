@@ -50,7 +50,7 @@ router.post('/createDiscussionRoom', auth, async (req, res) => {
         }
         let uid = 0;
         let role = RtcRole.PUBLISHER;
-        let expireTime = 24 * 7 * 3600;
+        let expireTime = 24 * 3600;
         const currentTime = Math.floor(Date.now() / 1000);
         const privilegeExpireTime = currentTime + expireTime;
         const token = RtcTokenBuilder.buildTokenWithUid(config.get('agoraAppID'), config.get('agoraAppCertificate'), name, uid, role, privilegeExpireTime);
