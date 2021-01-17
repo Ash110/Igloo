@@ -91,6 +91,12 @@ const UserModel = new Schema({
     notificationTokens: [{
         type: String,
     }],
+    nameModifiedDate : {
+        type:Date,
+    },
+    usernameModifiedDate: {
+        type: Date,
+    }
 });
 
 module.exports = User = mongoose.model('User', UserModel);

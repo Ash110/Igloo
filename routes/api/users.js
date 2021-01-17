@@ -474,12 +474,26 @@ router.post('/changeUsername', auth, async (req, res) => {
         return res.status(403).send("Username can only contain a-z A-Z 0-9, underscore (_) and full stop (.)");
     }
     try {
-        const user = await User.findOne({ username: username.toLowerCase() });
-        if (user) {
+        const checkUser = await User.findOne({ username: username.toLowerCase() });
+        if (checkUser) {
             return res.status(403).send("Username is taken. Please try another.");
         } else {
-            await User.findOneAndUpdate({ _id: req.id }, { username: username.toLowerCase() });
-            return res.status(200).send();
+            const user = await User.findById(req.id).select('usernameModifiedDate');
+            if (!user.usernameModifiedDate) {
+                await User.findOneAndUpdate({ _id: req.id }, { username: username.toLowerCase() });
+                await User.findOneAndUpdate({ _id: req.id }, { usernameModifiedDate: new Date() });
+                return res.status(200).send();
+            }
+            let lastModifiedDate = new Date(user.usernameModifiedDate);
+            let currentDate = new Date();
+            let differenceInDays = (currentDate.getTime() - lastModifiedDate.getTime()) / (1000 * 3600 * 24);
+            if (differenceInDays >= 14) {
+                await User.findOneAndUpdate({ _id: req.id }, { username: username.toLowerCase() });
+                await User.findOneAndUpdate({ _id: req.id }, { usernameModifiedDate: new Date() });
+                return res.status(200).send();
+            } else {
+                return res.status(403).send("Username can only be changed once every 14 days.");
+            }
         }
     } catch (err) {
         console.log(err);
@@ -499,8 +513,22 @@ router.post('/changeName', auth, async (req, res) => {
         return res.status(403).send("Name cannot be greater than 50 characters");
     }
     try {
-        await User.findOneAndUpdate({ _id: req.id }, { name: name });
-        return res.status(200).send();
+        const user = await User.findById(req.id).select('nameModifiedDate');
+        if (!user.nameModifiedDate) {
+            await User.findOneAndUpdate({ _id: req.id }, { name});
+            await User.findOneAndUpdate({ _id: req.id }, { nameModifiedDate: new Date() });
+            return res.status(200).send();
+        }
+        let lastModifiedDate = new Date(user.nameModifiedDate);
+        let currentDate = new Date();
+        let differenceInDays = (currentDate.getTime() - lastModifiedDate.getTime()) / (1000 * 3600 * 24);
+        if (differenceInDays >= 7) {
+            await User.findOneAndUpdate({ _id: req.id }, { name });
+            await User.findOneAndUpdate({ _id: req.id }, { nameModifiedDate: new Date() });
+            return res.status(200).send();
+        } else {
+            return res.status(403).send("Name can only be changed once every 7 days.");
+        }
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
