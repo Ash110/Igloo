@@ -54,6 +54,10 @@ const UserModel = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Notification',
     }],
+    numberOfNewNotifications: {
+        type: Number,
+        default: 0,
+    },
     posts: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post',
@@ -91,8 +95,8 @@ const UserModel = new Schema({
     notificationTokens: [{
         type: String,
     }],
-    nameModifiedDate : {
-        type:Date,
+    nameModifiedDate: {
+        type: Date,
     },
     usernameModifiedDate: {
         type: Date,

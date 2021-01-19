@@ -312,7 +312,7 @@ router.post('/likePost', auth, async (req, res) => {
             await Post.findOneAndUpdate({ _id: postId }, { $push: { likes: [req.id] } });
             if (req.id !== post.creator.toString()) {
                 const notification = new Notification({
-                    trigger: 'like',
+                    trigger: 'postLike',
                     sender: req.id,
                     triggerPost: postId,
                 });
@@ -325,6 +325,10 @@ router.post('/likePost', auth, async (req, res) => {
                         }
                     }
                 });
+                await User.findByIdAndUpdate(post.creator, {
+                    newNotifications: true,
+                });
+                await User.findByIdAndUpdate(post.creator, { $inc: { numberOfNewNotifications: 1 } });
             }
             return res.status(200).send("Done");
         }
