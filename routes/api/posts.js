@@ -253,11 +253,11 @@ router.post('/getPostDetails', auth, async (req, res) => {
             if (isMovie) {
                 const localIMDbSearch = await LocalIMDb.findOne({ imdbId });
                 if (localIMDbSearch) {
-                    console.log("Getting it locally");
+                    // console.log("Getting it locally");
                     const { Title, Year, Genre, Actors, Plot, Language, Country, Poster, imdbRating } = localIMDbSearch;
                     responsePost.movieDetails = { Title, Year, Genre, Actors, Plot, Language, Country, Poster, imdbRating };
                 } else {
-                    console.log("Getting it from IMDB");
+                    // console.log("Getting it from IMDB");
                     var imdbDetails = await axios.get(`http://www.omdbapi.com/?apikey=${config.get('omdbAPIKey')}&i=${imdbId}`);
                     // console.log(imdbDetails);
                     const { Title, Year, Genre, Actors, Plot, Language, Country, Poster, imdbRating } = imdbDetails.data;
@@ -364,7 +364,7 @@ router.post('/deletePost', auth, async (req, res) => {
     const { postId } = req.body;
     try {
         const post = await Post.findById(postId);
-        if (post) {
+        if (post && post.creator.toString() === req.id) {
             if (post.comments.length > 0) {
                 post.comments.map(async(commentId) => {
                     const comment = await Comment.findById(commentId).select('replies');

@@ -416,6 +416,7 @@ router.post('/unfollowUser', auth, async (req, res) => {
             await session.run(`Match (u:User{id : "${userId}"})-[:HAS_GROUP]-(g:Group)-[m:MEMBER_OF]-(u2:User{id : "${req.id}"})  DELETE m`);
             await session.run(`Match (u:User{id : "${req.id}"})-[:HAS_POST]-(p:Post)-[i:IN_FEED]-(u2:User{id : "${userId}"})  DELETE i`);
             await session.run(`Match (u:User{id : "${userId}"})-[:HAS_POST]-(p:Post)-[i:IN_FEED]-(u2:User{id : "${req.id}"})  DELETE i`);
+            await session.run(`Match (u:User{id : "${userId}"})-[:HAS_ROOM]-(r:Room)-[cer:CAN_ENTER_ROOM]-(u2:User{id : "${req.id}"})  DELETE cer`);
             // Now remove all the posts too 
         } catch (e) {
             console.log(e);
