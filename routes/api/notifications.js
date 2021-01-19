@@ -32,4 +32,18 @@ router.post('/getPendingFollowRequests', auth, async (req, res) => {
     }
 });
 
+//@route   POST /api/notifications/getAllNotifications
+//@desc    Get pending follow requests
+//access   Private
+
+router.post('/getAllNotifications', auth, async (req, res) => {
+    try {
+        const notifications = await User.findById(req.id).select('notifications').limit(20);
+        res.status(200).send(notifications);
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 module.exports = router;

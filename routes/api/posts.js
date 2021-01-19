@@ -5,9 +5,10 @@ const express = require('express');
 const User = require('../../models/User');
 const Post = require('../../models/Post');
 const Group = require('../../models/Group');
-const LocalIMDb = require('../../models/LocalIMDb');
 const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
+const LocalIMDb = require('../../models/LocalIMDb');
+const Notification = require('../../models/Notification');
 
 const router = express.Router();
 
@@ -309,6 +310,22 @@ router.post('/likePost', auth, async (req, res) => {
                 await session.close()
             }
             await Post.findOneAndUpdate({ _id: postId }, { $push: { likes: [req.id] } });
+            if (req.id !== post.creator.toString()) {
+                const notification = new Notification({
+                    trigger: 'like',
+                    sender: req.id,
+                    triggerPost: postId,
+                });
+                await notification.save();
+                await User.findOneAndUpdate({ _id: post.creator }, {
+                    $push: {
+                        notifications: {
+                            $each: [notification._id],
+                            $position: 0
+                        }
+                    }
+                });
+            }
             return res.status(200).send("Done");
         }
         else {
@@ -366,7 +383,7 @@ router.post('/deletePost', auth, async (req, res) => {
         const post = await Post.findById(postId);
         if (post && post.creator.toString() === req.id) {
             if (post.comments.length > 0) {
-                post.comments.map(async(commentId) => {
+                post.comments.map(async (commentId) => {
                     const comment = await Comment.findById(commentId).select('replies');
                     comment.replies.map(async (reply) => {
                         await Comment.findOneAndUpdate(

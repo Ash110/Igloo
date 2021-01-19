@@ -50,10 +50,10 @@ const UserModel = new Schema({
         type: Boolean,
         default: false
     },
-    // notifications: [{
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: 'Notification',
-    // }],
+    notifications: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Notification',
+    }],
     posts: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post',
