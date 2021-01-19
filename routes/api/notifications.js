@@ -40,10 +40,10 @@ router.post('/getPendingFollowRequests', auth, async (req, res) => {
 router.post('/getAllNotifications', auth, async (req, res) => {
     try {
         const notifications = await User.findById(req.id).select('notifications').limit(20);
-        await User.findByIdAndUpdate(post.creator, {
+        await User.findByIdAndUpdate(req.id, {
             newNotifications: false,
         });
-        await User.findByIdAndUpdate(post.creator, { numberOfNewNotifications: 0 });
+        await User.findByIdAndUpdate(req.id, { numberOfNewNotifications: 0 });
         res.status(200).send(notifications);
     } catch (err) {
         console.log(err);
