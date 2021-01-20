@@ -20,8 +20,8 @@ router.post('/getFeed', auth, async (req, res) => {
         const neo_res = await session.run(`MATCH (:User{id:"${req.id}"})-[:IN_FEED]->(p:Post) WHERE p.expiryDate > "${b}" RETURN p.id ORDER BY p.publishDate DESC`);
         posts = [];
         neo_res.records.map((record) => posts.push(record._fields[0]));
-
-        return res.status(200).send(posts);
+        const user = await User.findById(req.id).select('newNotifications numberOfNewNotifications');
+        return res.status(200).send({ feed: posts, newNotifications: user.newNotifications, numberOfNewNotifications: user.numberOfNewNotifications });
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
