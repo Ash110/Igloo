@@ -453,8 +453,10 @@ router.post('/registerToken', auth, async (req, res) => {
     try {
         const user = await User.findById(req.id).select('notificationTokens');
         let tokenArray = user.notificationTokens ? user.notificationTokens : [];
-        tokenArray.push(token);
-        await User.findOneAndUpdate({ _id: req.id }, { notificationTokens: tokenArray });
+        if(!tokenArray.includes(token)){
+            tokenArray.push(token);
+            await User.findOneAndUpdate({ _id: req.id }, { $push: { notificationTokens: [token] } });
+        }
         res.status(200).send("Done");
     } catch (err) {
         console.log(err);

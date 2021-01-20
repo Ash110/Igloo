@@ -1,10 +1,11 @@
 const path = require('path');
 const express = require('express');
 const User = require('../../models/User');
-const Comment = require('../../models/Comment');
-const auth = require('../../middleware/auth');
-const neodriver = require('../../neo4jconnect');
 const Post = require('../../models/Post');
+const auth = require('../../middleware/auth');
+const Comment = require('../../models/Comment');
+const neodriver = require('../../neo4jconnect');
+const { sendActionNotification } = require('../pushNotifications/actionNotification');
 
 const router = express.Router();
 
@@ -69,6 +70,12 @@ router.post('/createComment', auth, async (req, res) => {
                 newNotifications: true,
             });
             await User.findByIdAndUpdate(post.creator, { $inc: { numberOfNewNotifications: 1 } });
+            const senderUser = await User.findById(req.id).select('name');
+            let userNotificationTokens = await User.findById(post.creator).select('notificationTokens');
+            userNotificationTokens = userNotificationTokens.notificationTokens;
+            userNotificationTokens.map((token) => {
+                sendActionNotification(token, `${senderUser.name} has commented your post`, text, "notifications");
+            });
         }
         res.status(200).send(comment._id);
     } catch (err) {

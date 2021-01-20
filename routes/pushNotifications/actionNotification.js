@@ -1,4 +1,4 @@
-const { admin } = require('./firebaseInit') 
+const { admin } = require('./firebaseInit')
 
 const notification_options = {
     priority: "high",
@@ -24,12 +24,5 @@ const sendActionNotification = (registrationToken, title, body, page, options = 
             console.log(error);
         });
 }
-
-sendActionNotification(
-    "dR8afX2ZSambtPGZ_X31m_:APA91bE4CS1_gNXG7zVcRBodIRixgiBVrJd-HBuVLLE61BPXTo3lmw0Tk4nMMqhuPOk70B6EzFOOTP2H7hmFsfDSCKf3U-LlvIM364-LE5PkFbjmi57T-n9Z5nHNt1Umlpqrh393yvwa",
-    "Testing nodejs",
-    "Hope this works",
-    "notifications"
-    )
 
 module.exports = { sendActionNotification };

@@ -9,6 +9,7 @@ const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
 const LocalIMDb = require('../../models/LocalIMDb');
 const Notification = require('../../models/Notification');
+const { sendActionNotification } = require('../pushNotifications/actionNotification');
 
 const router = express.Router();
 
@@ -329,6 +330,12 @@ router.post('/likePost', auth, async (req, res) => {
                     newNotifications: true,
                 });
                 await User.findByIdAndUpdate(post.creator, { $inc: { numberOfNewNotifications: 1 } });
+                const senderUser = await User.findById(req.id).select('name');
+                let userNotificationTokens = await User.findById(post.creator).select('notificationTokens');
+                userNotificationTokens = userNotificationTokens.notificationTokens;
+                userNotificationTokens.map((token) => {
+                    sendActionNotification(token, `${senderUser.name} has liked your post`, "", "notifications");
+                });
             }
             return res.status(200).send("Done");
         }
