@@ -185,14 +185,14 @@ router.post('/login',
                 // sendNewLoginMail(user.email, user.username, (req.headers['x-forwarded-for'] || req.connection.remoteAddress))
                 //     .then(() => console.log("Email Sent"))
                 //     .catch((err) => console.log(err));
-                const { name, username, profilePicture, headerImage } = user;
+                const { name, username, profilePicture, headerImage, bio } = user;
                 jwt.sign(
                     payload,
                     config.get('jwtSecret'),
                     { expiresIn: "7 days" },
                     (err, token) => {
                         if (err) throw err;
-                        return res.status(200).json({ token, name, username, profilePicture, headerImage });
+                        return res.status(200).json({ token, name, username, profilePicture, headerImage, bio });
                     }
                 )
             } catch (err) {
@@ -228,8 +228,8 @@ router.post('/getUserDetails', auth, async (req, res) => {
     const { userId } = req.body;
     try {
         const user = await User.findById(userId);
-        const { name, username, profilePicture, friends } = user;
-        var userDetails = { name, username, profilePicture, friends: friends.length };
+        const { name, username, profilePicture, friends, bio, headerImage } = user;
+        var userDetails = { name, username, profilePicture, friends: friends.length, bio, headerImage };
         const session = neodriver.session();
         try {
             const neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)-[:FOLLOWS]-(u2))`);
@@ -548,7 +548,7 @@ router.post('/changeBio', auth, async (req, res) => {
         return res.status(403).send("Bio cannot be empty");
     }
     if (bio.length > 100) {
-        return res.status(403).send("bio cannot be greater than 100 characters");
+        return res.status(403).send("Bio cannot be greater than 100 characters");
     }
     try {
 
