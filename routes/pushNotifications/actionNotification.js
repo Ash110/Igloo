@@ -25,4 +25,25 @@ const sendActionNotification = (registrationToken, title, body, page, options = 
         });
 }
 
-module.exports = { sendActionNotification };
+const userPageNotification = (registrationToken, title, body, page, userId, options = notification_options,) => {
+    var payload = {
+        notification: {
+            title,
+            body,
+            "click_action": "FLUTTER_NOTIFICATION_CLICK",
+        },
+        data: {
+            page,
+            userId,
+        },
+    };
+    admin.messaging().sendToDevice(registrationToken, payload, options)
+        .then(response => {
+            // console.log("NotifSuccessfully sent");
+        })
+        .catch(error => {
+            console.log(error);
+        });
+}
+
+module.exports = { sendActionNotification, userPageNotification };

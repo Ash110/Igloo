@@ -8,6 +8,7 @@ const auth = require('../../middleware/auth')
 const neodriver = require('../../neo4jconnect');
 const sendWelcomeMail = require('../email/welcomeMail');
 const { check, validationResult } = require('express-validator');
+const { sendActionNotification, userPageNotification } = require('../pushNotifications/actionNotification');
 
 const router = express.Router();
 
@@ -309,6 +310,11 @@ router.post('/followUser', auth, async (req, res) => {
         } then = async () => {
             await session.close()
         }
+        const user = await User.findById(userId).select('notificationTokens');
+        if (user.notificationTokens && user.notificationTokens.length > 0) {
+            const sender = await User.findById(req.id).select('name');
+            sendActionNotification(user.notificationTokens, `${sender.name} has accepted your follow request`, "", "notifications");
+        }
         res.status(200).send("Request sent!");
     } catch (err) {
         console.log(err);
@@ -369,6 +375,11 @@ router.post('/acceptFollowRequest', auth, async (req, res) => {
         }
         await User.findOneAndUpdate({ _id: req.id }, { $push: { friends: [userId] } });
         await User.findOneAndUpdate({ _id: userId }, { $push: { friends: [req.id] } });
+        const user = await User.findById(userId).select('notificationTokens');
+        if (user.notificationTokens && user.notificationTokens.length > 0) {
+            const sender = await User.findById(req.id).select('name');
+            userPageNotification(user.notificationTokens, `${sender.name} has accepted your follow request`, "", "user", req.id);
+        }
         res.status(200).send("Followed");
     } catch (err) {
         console.log(err);
