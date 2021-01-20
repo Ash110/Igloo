@@ -48,6 +48,28 @@ router.post('/createComment', auth, async (req, res) => {
             await session.close()
             return res.status(500).send("Unable to create comment");
         }
+        const post = await Post.findById(parentPost);
+        if (req.id !== post.creator.toString()) {
+            const notification = new Notification({
+                trigger: 'postComment',
+                sender: req.id,
+                triggerPost: parentPost,
+                commentText: text,
+            });
+            await notification.save();
+            await User.findOneAndUpdate({ _id: post.creator }, {
+                $push: {
+                    notifications: {
+                        $each: [notification._id],
+                        $position: 0
+                    }
+                }
+            });
+            await User.findByIdAndUpdate(post.creator, {
+                newNotifications: true,
+            });
+            await User.findByIdAndUpdate(post.creator, { $inc: { numberOfNewNotifications: 1 } });
+        }
         res.status(200).send(comment._id);
     } catch (err) {
         console.log(err);
@@ -213,7 +235,7 @@ router.post('/deleteComment', auth, async (req, res) => {
             return res.status(200).send("Deleted");
         } else {
             const comment = await Comment.findById(commentId).select('replies');
-            comment.replies.map(async(reply) => {
+            comment.replies.map(async (reply) => {
                 await Comment.findOneAndUpdate(
                     { _id: commentId },
                     { $pullAll: { replies: [reply] } },

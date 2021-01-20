@@ -59,8 +59,8 @@ router.post('/getNotificationDetails', auth, async (req, res) => {
     const { notificationId } = req.body;
     try {
         const notification = await Notification.findById(notificationId).populate('sender triggerPost', 'name profilePicture image');
-        const { trigger, sender, dateOfCreation, triggerPost } = notification;
-        const resultNotification = { trigger, sender, dateOfCreation, triggerPost };
+        const { trigger, sender, dateOfCreation, triggerPost, commentText } = notification;
+        const resultNotification = { trigger, sender, dateOfCreation, triggerPost, commentText };
         res.status(200).send(resultNotification);
     } catch (err) {
         console.log(err);

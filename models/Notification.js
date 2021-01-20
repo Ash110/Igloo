@@ -23,6 +23,9 @@ const NotificationModel = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post',
     },
+    commentText : {
+        type : String,
+    },
 });
 
 module.exports = Notification = mongoose.model('Notification', NotificationModel);
