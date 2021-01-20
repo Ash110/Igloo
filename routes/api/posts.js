@@ -229,6 +229,20 @@ router.post('/createMoviePost', auth, async (req, res) => {
 router.post('/getPostDetails', auth, async (req, res) => {
     const { postId } = req.body;
     try {
+        const checkSession = neodriver.session();
+        try {
+            const neo_res_check = await checkSession.run(`return EXISTS((:User{ id : "${req.id}" })-[:IN_FEED]->(:Post{id : "${postId}"}))`);
+            const canView = neo_res_check.records[0]._fields[0];
+            if (!canView) {
+                return res.status(403).send("Cannot View the post");
+            }
+        } catch (e) {
+            console.log(e);
+            await checkSession.close()
+            return res.status(500).send("Unable to get post");
+        } then = async () => {
+            await checkSession.close()
+        }
         const post = await Post.findById(postId).populate({ path: 'creator', 'select': 'name profilePicture username' });
         if (post) {
             const { isText, image, disableComments, caption, publishTime, likes, creator, comments, isMovie, isSong, songDetails, imdbId } = post;
