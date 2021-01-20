@@ -453,7 +453,7 @@ router.post('/registerToken', auth, async (req, res) => {
     try {
         const user = await User.findById(req.id).select('notificationTokens');
         let tokenArray = user.notificationTokens ? user.notificationTokens : [];
-        if(!tokenArray.includes(token)){
+        if (!tokenArray.includes(token)) {
             tokenArray.push(token);
             await User.findOneAndUpdate({ _id: req.id }, { $push: { notificationTokens: [token] } });
         }
@@ -465,7 +465,7 @@ router.post('/registerToken', auth, async (req, res) => {
 });
 
 //@route   /api/users/changeUsername
-//@desc    Register a new token
+//@desc    Change User Username
 //access   Private
 
 router.post('/changeUsername', auth, async (req, res) => {
@@ -504,7 +504,7 @@ router.post('/changeUsername', auth, async (req, res) => {
     }
 });
 //@route   /api/users/changeName
-//@desc    Register a new token
+//@desc    Change User Name
 //access   Private
 
 router.post('/changeName', auth, async (req, res) => {
@@ -518,7 +518,7 @@ router.post('/changeName', auth, async (req, res) => {
     try {
         const user = await User.findById(req.id).select('nameModifiedDate');
         if (!user.nameModifiedDate) {
-            await User.findOneAndUpdate({ _id: req.id }, { name});
+            await User.findOneAndUpdate({ _id: req.id }, { name });
             await User.findOneAndUpdate({ _id: req.id }, { nameModifiedDate: new Date() });
             return res.status(200).send();
         }
@@ -532,6 +532,28 @@ router.post('/changeName', auth, async (req, res) => {
         } else {
             return res.status(403).send("Name can only be changed once every 7 days.");
         }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/users/changeBio
+//@desc    Change User Bio
+//access   Private
+
+router.post('/changeBio', auth, async (req, res) => {
+    const { bio } = req.body;
+    if (bio.trim() == "") {
+        return res.status(403).send("Bio cannot be empty");
+    }
+    if (bio.length > 100) {
+        return res.status(403).send("bio cannot be greater than 100 characters");
+    }
+    try {
+
+        await User.findOneAndUpdate({ _id: req.id }, { bio });
+        return res.status(200).send();
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
