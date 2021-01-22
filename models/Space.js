@@ -31,6 +31,10 @@ const SpaceModel = new Schema({
     roomToken: {
         type: String,
         required: true,
+    },
+    isGlobal: {
+        type: Boolean,
+        default: false,
     }
 });
 

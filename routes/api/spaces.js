@@ -42,7 +42,7 @@ router.post('/getAllRooms', auth, async (req, res) => {
 //access   Private
 
 router.post('/createDiscussionRoom', auth, async (req, res) => {
-    const { name, description, selectedFriends } = req.body;
+    const { name, description, selectedFriends, isGlobal } = req.body;
     console.log(selectedFriends)
     try {
         if (!name) {
@@ -60,6 +60,7 @@ router.post('/createDiscussionRoom', auth, async (req, res) => {
             creator: req.id,
             roomType: 'discussion',
             roomToken: token,
+            isGlobal,
         });
         await room.save();
         const session = neodriver.session();
@@ -123,5 +124,19 @@ router.post('/getRoomDetails', auth, async (req, res) => {
     }
 });
 
+//@route   POST /api/spaces/getGlobalRooms
+//@desc    Fetch all rooms
+//access   Private
+
+router.post('/getGlobalRooms', auth, async (req, res) => {
+    try {
+        let rooms = [];
+        rooms = await Space.find({ isGlobal: true }).select('_id');
+        return res.status(200).send({ rooms });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
 
 module.exports = router;
