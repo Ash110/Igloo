@@ -35,7 +35,11 @@ const SpaceModel = new Schema({
     isGlobal: {
         type: Boolean,
         default: false,
-    }
+    },
+    isTemplate: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 module.exports = Space = mongoose.model('Space', SpaceModel);

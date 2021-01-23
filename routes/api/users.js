@@ -272,7 +272,7 @@ router.post('/getUserFriends', auth, async (req, res) => {
         const session = neodriver.session();
         let friends = [];
         try {
-            const neo_res = await session.run(`MATCH (u1{id : "${req.id}"})-[:FOLLOWS]-(u2)  RETURN u2.profilePicture, u2.name, u2.username`);
+            const neo_res = await session.run(`MATCH (u1{id : "${req.id}"})-[:FOLLOWS]-(u2)  RETURN u2.profilePicture, u2.name, u2.username, u2.id`);
             // console.log();
             neo_res.records.map((friend) => friends.push(friend._fields));
         } catch (e) {

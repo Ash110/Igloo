@@ -9,6 +9,7 @@ const Space = require('../../models/Space');
 const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
 const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
+const mongoose = require('mongoose');
 
 const router = express.Router();
 
@@ -42,7 +43,7 @@ router.post('/getAllRooms', auth, async (req, res) => {
 //access   Private
 
 router.post('/createDiscussionRoom', auth, async (req, res) => {
-    const { name, description, selectedFriends, isGlobal } = req.body;
+    const { name, description, selectedFriends, isGlobal, isTemplate } = req.body;
     console.log(selectedFriends)
     try {
         if (!name) {
@@ -61,6 +62,8 @@ router.post('/createDiscussionRoom', auth, async (req, res) => {
             roomType: 'discussion',
             roomToken: token,
             isGlobal,
+            isTemplate,
+            members: selectedFriends,
         });
         await room.save();
         const session = neodriver.session();
@@ -70,7 +73,7 @@ router.post('/createDiscussionRoom', auth, async (req, res) => {
             await session.run(`MATCH (u:User{id : "${req.id}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
             selectedFriends.map(async (friend) => {
                 const usersession = neodriver.session();
-                await usersession.run(`MATCH (u:User{username : "${friend}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
+                await usersession.run(`MATCH (u:User{id : "${friend}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
                 await usersession.close()
             });
         } catch (e) {
@@ -107,7 +110,7 @@ router.post('/getRoomDetails', auth, async (req, res) => {
     try {
         const room = await Space.findById(roomId)
             .populate('creator', 'name profilePicture')
-            .select('name description creator roomToken')
+            .select('name description creator roomToken isGlobal')
         if (room) {
             const memberDetails = await axios.post(`${config.get('chatServerUrl')}/getRoomMembers`, {
                 roomId,
@@ -133,6 +136,72 @@ router.post('/getGlobalRooms', auth, async (req, res) => {
         let rooms = [];
         rooms = await Space.find({ isGlobal: true }).select('_id');
         return res.status(200).send({ rooms });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   POST /api/spaces/getUserTemplates
+//@desc    Fetch all user templates
+//access   Private
+
+router.post('/getUserTemplates', auth, async (req, res) => {
+    try {
+        let templates = [];
+        templates = await Space.find({ isTemplate: true, creator: req.id, }).select('name description _id');
+        console.log(templates);
+        return res.status(200).send({ templates });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   POST /api/spaces/createRoomFromTemplate
+//@desc    Create a room from a template
+//access   Private
+
+router.post('/createRoomFromTemplate', auth, async (req, res) => {
+    const { roomId } = req.body;
+    try {
+        const room = await Space.findById(roomId);
+        let uid = 0;
+        let role = RtcRole.PUBLISHER;
+        let expireTime = 24 * 3600;
+        const currentTime = Math.floor(Date.now() / 1000);
+        const privilegeExpireTime = currentTime + expireTime;
+        const token = RtcTokenBuilder.buildTokenWithUid(config.get('agoraAppID'), config.get('agoraAppCertificate'), room.name, uid, role, privilegeExpireTime);
+        await Space.findByIdAndUpdate(roomId, { token });
+        const session = neodriver.session();
+        try {
+            await session.run(`CREATE (r:Room {id : "${room._id}", type : "discussion", publishDate:"${new Date().toISOString()}" }) return r`);
+            await session.run(`MATCH (u:User{id : "${req.id}"}),(r:Room {id : "${room._id}"}) CREATE (u)-[:HAS_ROOM]->(r) return u.name`);
+            await session.run(`MATCH (u:User{id : "${req.id}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
+            rooms.members.map(async (friend) => {
+                const usersession = neodriver.session();
+                await usersession.run(`MATCH (u:User{id : "${friend}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
+                await usersession.close()
+            });
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to create room");
+        } then = async () => {
+            await session.close()
+        }
+        try {
+            await axios.post(`${config.get('chatServerUrl')}/registerNewRoom`, {
+                roomId: room._id,
+            });
+        } catch (err) {
+            console.log("Failed to reach chat server");
+            console.log(err);
+        }
+        return res.status(200).send({
+            roomId: room._id,
+            roomToken: token,
+        });
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
