@@ -3,13 +3,11 @@ const axios = require('axios');
 const config = require('config');
 const express = require('express');
 const User = require('../../models/User');
-const Post = require('../../models/Post');
-const Group = require('../../models/Group');
 const Space = require('../../models/Space');
 const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
 const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
-const mongoose = require('mongoose');
+const { removeBasicRoom, alertBasicRoomExpiry } = require('../../agenda/agendaFunctions');
 
 const router = express.Router();
 
@@ -91,6 +89,8 @@ router.post('/createDiscussionRoom', auth, async (req, res) => {
             console.log("Failed to reach chat server");
             console.log(err);
         }
+        removeBasicRoom(room._id);
+        alertBasicRoomExpiry(room._id);
         return res.status(200).send({
             roomId: room._id,
             roomToken: token,
@@ -178,7 +178,7 @@ router.post('/createRoomFromTemplate', auth, async (req, res) => {
             await session.run(`CREATE (r:Room {id : "${room._id}", type : "discussion", publishDate:"${new Date().toISOString()}" }) return r`);
             await session.run(`MATCH (u:User{id : "${req.id}"}),(r:Room {id : "${room._id}"}) CREATE (u)-[:HAS_ROOM]->(r) return u.name`);
             await session.run(`MATCH (u:User{id : "${req.id}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
-            rooms.members.map(async (friend) => {
+            room.members.map(async (friend) => {
                 const usersession = neodriver.session();
                 await usersession.run(`MATCH (u:User{id : "${friend}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
                 await usersession.close()
@@ -198,9 +198,12 @@ router.post('/createRoomFromTemplate', auth, async (req, res) => {
             console.log("Failed to reach chat server");
             console.log(err);
         }
+        removeBasicRoom(room._id);
+        alertBasicRoomExpiry(room._id);
         return res.status(200).send({
             roomId: room._id,
             roomToken: token,
+            name: room.name,
         });
     } catch (err) {
         console.log(err);

@@ -1,5 +1,6 @@
 {
     "mongoURI": "mongodb://localhost:27017/bender",
+    "mongoAgendaURI": "mongodb://localhost:27017/benderAgenda",
     "neo4juri": "bolt://localhost:7687",
     "neo4juser": "neo4j",
     "neo4jpassword": "neobender",

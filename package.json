@@ -9,6 +9,7 @@
   "author": "Ashwin Alaparthi",
   "license": "MIT",
   "dependencies": {
+    "agenda": "^4.0.1",
     "agora-access-token": "^2.0.4",
     "axios": "^0.21.1",
     "bcryptjs": "^2.4.3",
