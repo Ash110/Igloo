@@ -7,6 +7,7 @@ const neodriver = require('../neo4jconnect');
 agenda.define('remove basic room', async job => {
     const { roomId } = job.attrs.data;
     const session = neodriver.session();
+    console.log(`${roomId} being deleted`);
     try {
         await session.run(`MATCH (r:Room {id : "${roomId}"}) DETACH DELETE r`);
     } catch (e) {
@@ -27,6 +28,7 @@ agenda.define('remove basic room', async job => {
 
 agenda.define('alert basic room expiry', async job => {
     const { roomId } = job.attrs.data;
+    console.log(`${roomId} being alerted`);
     try {
         await axios.post(`${config.get('chatServerUrl')}/alertRoomExpiry`, {
             roomId: roomId,
@@ -39,14 +41,12 @@ agenda.define('alert basic room expiry', async job => {
 
 const removeBasicRoom = async (roomId) => {
     await agenda.start();
-    console.log(`${roomId} being deleted`);
-    await agenda.schedule('in 1 minute', 'remove basic room', { roomId });
+    await agenda.schedule('in 15 minutes', 'remove basic room', { roomId });
 }
 
 const alertBasicRoomExpiry = async (roomId) => {
     await agenda.start();
-    console.log(`${roomId} being alerted`);
-    await agenda.schedule('in 30 seconds', 'alert basic room expiry', { roomId });
+    await agenda.schedule('in 14 minutes', 'alert basic room expiry', { roomId });
 }
 
 module.exports = { removeBasicRoom, alertBasicRoomExpiry };
