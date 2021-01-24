@@ -48,7 +48,7 @@ const PostModel = new Schema({
     isMovie: {
         type: Boolean,
     },
-    imdbId:{
+    imdbId: {
         type: String,
     },
     publishTime: {
@@ -73,6 +73,14 @@ const PostModel = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Comment',
     }],
+    isPagePost: {
+        type: Boolean,
+        default: false,
+    },
+    page: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Page',
+    },
 });
 
 module.exports = Post = mongoose.model('Post', PostModel);

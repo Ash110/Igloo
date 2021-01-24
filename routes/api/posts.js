@@ -4,7 +4,7 @@ const config = require('config');
 const express = require('express');
 const User = require('../../models/User');
 const Post = require('../../models/Post');
-const Group = require('../../models/Group');
+const Page = require('../../models/Page');
 const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
 const LocalIMDb = require('../../models/LocalIMDb');
@@ -41,9 +41,53 @@ router.post('/createImagePost', auth, async (req, res) => {
             await session.run(`CREATE (p:Post {id : "${postId}", type : "image", expiryDate : "${expiryDate}", publishDate:"${new Date().toISOString()}" }) return p`);
             await session.run(`MATCH (u:User{id : "${req.id}"}),(p:Post {id : "${postId}"}) CREATE (u)-[:HAS_POST]->(p) return u.name`);
             selectedGroups.map(async (groupId) => {
-                await session.run(`MATCH (g:Group{id : "${groupId}"}),(p:Post {id : "${postId}"}) CREATE (g)-[:CONTAINS]->(p) return g.id`);
-                await session.run(`MATCH (u:User)-[:MEMBER_OF]->(g:Group{id: "${groupId}"})-[:CONTAINS]->(p:Post{id:"${postId}"}) MERGE (u)-[:IN_FEED]->(p) return u.name`);
+                const localsession = neodriver.session();
+                await localsession.run(`MATCH (g:Group{id : "${groupId}"}),(p:Post {id : "${postId}"}) CREATE (g)-[:CONTAINS]->(p) return g.id`);
+                await localsession.run(`MATCH (u:User)-[:MEMBER_OF]->(g:Group{id: "${groupId}"})-[:CONTAINS]->(p:Post{id:"${postId}"}) MERGE (u)-[:IN_FEED]->(p) return u.name`);
+                await localsession.close();
             });
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to create post");
+        } then = async () => {
+            await session.close()
+        }
+        return res.status(200).send("Done");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   POST /api/posts/createPageImagePost
+//@desc    Create the image post
+//access   Private
+
+router.post('/createPageImagePost', auth, async (req, res) => {
+    const { caption, validity, selectedPage, disableComments, postId } = req.body;
+    var expiryDate = new Date();
+    if (validity == 0) {
+        expiryDate.setHours(expiryDate.getHours() + 1);
+    }
+    if (validity == 1) {
+        expiryDate.setDate(expiryDate.getDate() + 1);
+    }
+    if (validity == 2) {
+        expiryDate.setDate(expiryDate.getDate() + 7);
+    }
+    if (validity == 3) {
+        expiryDate.setFullYear(expiryDate.getFullYear() + 99);
+    }
+    expiryDate = expiryDate.toISOString();
+    try {
+        await Post.findOneAndUpdate({ _id: postId }, { caption, expiryDate, isText: false, disableComments, page: selectedPage, isPagePost: true, });
+        await Page.findOneAndUpdate({ _id: selectedPage }, { $push: { posts: [postId] } });
+        const session = neodriver.session();
+        try {
+            await session.run(`CREATE (p:Post {id : "${postId}", type : "image", expiryDate : "${expiryDate}", publishDate:"${new Date().toISOString()}" }) return p`);
+            await session.run(`MATCH (pg:Page{id : "${selectedPage}"}),(p:Post {id : "${post.id}"}) CREATE (pg)-[:PAGE_HAS_POST]->(p) return pg.id`);
+            await session.run(`MATCH (u:User)-[:SUBSCRIBED_TO]->(pg:Page{id: "${selectedPage}"})-[:PAGE_HAS_POST]->(p:Post{id:"${postId}"}) MERGE (u)-[:IN_FEED]->(p) return u.id`);
         } catch (e) {
             console.log(e);
             await session.close()
@@ -90,11 +134,61 @@ router.post('/createTextPost', auth, async (req, res) => {
             await session.run(`MATCH (u:User{id : "${req.id}"}),(p:Post {id : "${post._id}"}) CREATE (u)-[:HAS_POST]->(p) return u.name`);
             selectedGroups.map(async (groupId) => {
                 const localsession = neodriver.session();
-                console.log(groupId);
                 await localsession.run(`MATCH (g:Group{id : "${groupId}"}),(p:Post {id : "${post._id}"}) CREATE (g)-[:CONTAINS]->(p) return g.id`);
                 await localsession.run(`MATCH (u:User)-[:MEMBER_OF]->(g:Group{id: "${groupId}"})-[:CONTAINS]->(p:Post{id:"${post._id}"}) MERGE (u)-[:IN_FEED]->(p) return u.name`);
                 await localsession.close()
             });
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to create post");
+        } then = async () => {
+            await session.close()
+        }
+        return res.status(200).send("Done");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   POST /api/posts/createPageTextPost
+//@desc    Create a Page Text post
+//access   Private
+
+router.post('/createPageTextPost', auth, async (req, res) => {
+    const { caption, validity, selectedPage, disableComments } = req.body;
+    var expiryDate = new Date();
+    if (validity == 0) {
+        expiryDate.setHours(expiryDate.getHours() + 1);
+    }
+    if (validity == 1) {
+        expiryDate.setDate(expiryDate.getDate() + 1);
+    }
+    if (validity == 2) {
+        expiryDate.setDate(expiryDate.getDate() + 7);
+    }
+    if (validity == 3) {
+        expiryDate.setFullYear(expiryDate.getFullYear() + 99);
+    }
+    expiryDate = expiryDate.toISOString();
+    try {
+        const post = new Post({
+            caption,
+            expiryDate,
+            isText: true,
+            disableComments,
+            page: selectedPage,
+            creator: req.id,
+            isPagePost: true,
+        });
+        await post.save();
+        await Page.findOneAndUpdate({ _id: selectedPage }, { $push: { posts: [post._id] } });
+        const session = neodriver.session();
+        try {
+            await session.run(`CREATE (p:Post {id : "${post._id}", type : "text", expiryDate : "${expiryDate}", publishDate:"${new Date().toISOString()}" }) return p`);
+            await session.run(`MATCH (pg:Page{id : "${selectedPage}"}),(p:Post {id : "${post._id}"}) CREATE (pg)-[:PAGE_HAS_POST]->(p) return pg.id`);
+            await session.run(`MATCH (u:User)-[:SUBSCRIBED_TO]->(pg:Page{id: "${selectedPage}"})-[:PAGE_HAS_POST]->(p:Post{id:"${post._id}"}) MERGE (u)-[:IN_FEED]->(p) return u.id`);
         } catch (e) {
             console.log(e);
             await session.close()
@@ -166,6 +260,59 @@ router.post('/createSongPost', auth, async (req, res) => {
     }
 });
 
+//@route   POST /api/posts/createPageSongPost
+//@desc    Create a Song post
+//access   Private
+
+router.post('/createPageSongPost', auth, async (req, res) => {
+    const { caption, validity, selectedPage, disableComments, songDetails } = req.body;
+    var expiryDate = new Date();
+    if (validity == 0) {
+        expiryDate.setHours(expiryDate.getHours() + 1);
+    }
+    if (validity == 1) {
+        expiryDate.setDate(expiryDate.getDate() + 1);
+    }
+    if (validity == 2) {
+        expiryDate.setDate(expiryDate.getDate() + 7);
+    }
+    if (validity == 3) {
+        expiryDate.setFullYear(expiryDate.getFullYear() + 99);
+    }
+    expiryDate = expiryDate.toISOString();
+    try {
+        const post = new Post({
+            caption,
+            expiryDate,
+            isText: false,
+            isSong: true,
+            disableComments,
+            page: selectedPage,
+            creator: req.id,
+            songDetails,
+            isPagePost: true,
+        });
+        await post.save();
+        await Page.findOneAndUpdate({ _id: selectedPage }, { $push: { posts: [post._id] } });
+        const session = neodriver.session();
+        try {
+            await session.run(`CREATE (p:Post {id : "${post.id}", type : "text", expiryDate : "${expiryDate}", publishDate:"${new Date().toISOString()}" }) return p`);
+            await session.run(`MATCH (pg:Post{id : "${selectedPage}"}),(p:Post {id : "${post.id}"}) CREATE (pg)-[:PAGE_HAS_POST]->(p) return pg.id`);
+            await session.run(`MATCH (u:User)-[:SUBSCRIBED_TO]->(pg:Page{id: "${selectedPage}"})-[:PAGE_HAS_POST]->(p:Post{id:"${post.id}"}) MERGE (u)-[:IN_FEED]->(p) return u.id`);
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to create post");
+        } then = async () => {
+            await session.close()
+        }
+        return res.status(200).send("Done");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 //@route   POST /api/posts/createMoviePost
 //@desc    Create a Movie or Show post
 //access   Private
@@ -208,6 +355,58 @@ router.post('/createMoviePost', auth, async (req, res) => {
                 await localsession.run(`MATCH (u:User)-[:MEMBER_OF]->(g:Group{id: "${groupId}"})-[:CONTAINS]->(p:Post{id:"${post._id}"}) MERGE (u)-[:IN_FEED]->(p) return u.name`);
                 await localsession.close()
             });
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to create post");
+        } then = async () => {
+            await session.close()
+        }
+        return res.status(200).send("Done");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   POST /api/posts/createPageMoviePost
+//@desc    Create a Movie or Show post
+//access   Private
+
+router.post('/createPageMoviePost', auth, async (req, res) => {
+    const { caption, validity, selectedPage, disableComments, imdbId } = req.body;
+    var expiryDate = new Date();
+    if (validity == 0) {
+        expiryDate.setHours(expiryDate.getHours() + 1);
+    }
+    if (validity == 1) {
+        expiryDate.setDate(expiryDate.getDate() + 1);
+    }
+    if (validity == 2) {
+        expiryDate.setDate(expiryDate.getDate() + 7);
+    }
+    if (validity == 3) {
+        expiryDate.setFullYear(expiryDate.getFullYear() + 99);
+    }
+    expiryDate = expiryDate.toISOString();
+    try {
+        const post = new Post({
+            caption,
+            expiryDate,
+            isMovie: true,
+            disableComments,
+            page: selectedPage,
+            creator: req.id,
+            imdbId,
+            isPagePost: true,
+        });
+        await post.save();
+        await Page.findOneAndUpdate({ _id: selectedPage }, { $push: { posts: [post._id] } });
+        const session = neodriver.session();
+        try {
+            await session.run(`CREATE (p:Post {id : "${post.id}", type : "text", expiryDate : "${expiryDate}", publishDate:"${new Date().toISOString()}" }) return p`);
+            await session.run(`MATCH (pg:Post{id : "${selectedPage}"}),(p:Post {id : "${post.id}"}) CREATE (pg)-[:PAGE_HAS_POST]->(p) return pg.id`);
+            await session.run(`MATCH (u:User)-[:SUBSCRIBED_TO]->(pg:Page{id: "${selectedPage}"})-[:PAGE_HAS_POST]->(p:Post{id:"${post.id}"}) MERGE (u)-[:IN_FEED]->(p) return u.id`);
         } catch (e) {
             console.log(e);
             await session.close()

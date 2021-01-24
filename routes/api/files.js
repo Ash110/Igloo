@@ -127,4 +127,41 @@ router.post('/uploadImagePost', auth, (req, res) => {
     });
 });
 
+//@route   POST /api/files/uploadPageImagePost
+//@desc    Upload a new Page Image Post
+//access   Private
+
+router.post('/uploadPageImagePost', auth, (req, res) => {
+    // Set storage engine
+    var imageName = '';
+    const storage = multer.diskStorage({
+        destination: './images/pageposts/',
+        filename: (req, file, callback) => {
+            imageName = req.id + "_" + Date.now() + path.extname(file.originalname);
+            callback(null, imageName);
+        }
+    })
+
+    //Initialise Upload
+    const upload = multer({ storage }).single('post');
+
+    //Start the upload
+    upload(req, res, async (err) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).send("Server Error");
+        } else {
+            console.log(req.file);
+            const post = new Post({
+                creator: req.id,
+                isText: false,
+                image: imageName,
+                isPagePost : true,
+            });
+            await post.save();
+            return res.status(200).send({ imageName, postId: post._id });
+        }
+    });
+});
+
 module.exports = router;
