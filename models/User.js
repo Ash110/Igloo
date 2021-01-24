@@ -62,6 +62,10 @@ const UserModel = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post',
     }],
+    pages: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Page',
+    }],
     passwordReset: {
         code: {
             type: String,

@@ -40,6 +40,7 @@ connectToDatabase();
 app.use('/api/feed', require('./routes/api/feed'));
 app.use('/api/users', require('./routes/api/users'));
 app.use('/api/files', require('./routes/api/files'));
+app.use('/api/pages', require('./routes/api/pages'));
 app.use('/api/posts', require('./routes/api/posts'));
 app.use('/api/groups', require('./routes/api/groups'));
 app.use('/api/search', require('./routes/api/search'));
