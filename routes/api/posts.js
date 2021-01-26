@@ -442,10 +442,10 @@ router.post('/getPostDetails', auth, async (req, res) => {
         } then = async () => {
             await checkSession.close()
         }
-        const post = await Post.findById(postId).populate({ path: 'creator', 'select': 'name profilePicture username' });
+        const post = await Post.findById(postId).populate({ path: 'creator page', 'select': 'name profilePicture username' });
         if (post) {
-            const { isText, image, disableComments, caption, publishTime, likes, creator, comments, isMovie, isSong, songDetails, imdbId } = post;
-            var responsePost = { isText, image, disableComments, caption, publishTime, creator, isSong, songDetails, isMovie };
+            const { isText, image, disableComments, caption, publishTime, likes, creator, comments, isMovie, isSong, songDetails, imdbId, isPagePost, page } = post;
+            var responsePost = { isText, image, disableComments, caption, publishTime, creator, isSong, songDetails, isMovie, isPagePost, page };
             if (creator._id.toString() === req.id.toString()) {
                 responsePost.isCreator = true;
             } else {

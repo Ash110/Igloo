@@ -65,4 +65,88 @@ router.post('/createPage', auth, async (req, res) => {
     }
 });
 
+//@route   /api/pages/getPageDetails
+//@desc    Get page details
+//access   Private
+
+router.post('/getPageDetails', auth, async (req, res) => {
+    const { pageId } = req.body;
+    try {
+        const page = await Page.findById(pageId).populate('creator', 'name username');
+        const { name, description, category, creator } = page;
+        var pageDetails = { name, description, category, creator };
+        const session = neodriver.session();
+        try {
+            const neo_res = await session.run(`MATCH (u),(pg) WHERE u.id = "${req.id}" AND pg.id = "${pageId}" RETURN EXISTS((u)-[:SUBSCRIBED_TO]->(pg))`);
+            pageDetails.isSubscribed = neo_res.records[0]._fields[0];
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to fetch page details' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        res.status(200).send({ pageDetails });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/pages/unsubscribePage
+//@desc    Unsubscribe user from page
+//access   Private
+
+router.post('/unsubscribePage', auth, async (req, res) => {
+    const { pageId } = req.body;
+    try {
+        const session = neodriver.session();
+        try {
+            await session.run(`MATCH (u{id : "${req.id}"})-[if:IN_FEED]->(p:Post)<-[:PAGE_HAS_POST]-(pg{id: "${pageId}"}) DELETE if`);
+            await session.run(`MATCH (u{id : "${req.id}"})-[st:SUBSCRIBED_TO]->(pg{id: "${pageId}"}) DELETE st`);
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to unsubscribe from page' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        res.status(200).send("Done");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/pages/subscribePage
+//@desc    Subscribe user to page
+//access   Private
+
+router.post('/subscribePage', auth, async (req, res) => {
+    const { pageId } = req.body;
+    try {
+        const session = neodriver.session();
+        try {
+            await session.run(`MATCH (u:User {id : "${req.id}"}), (pg:Page{ id : "${pageId}"}) CREATE (u)-[:SUBSCRIBED_TO]->(pg) RETURN pg.id`);
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to subscribe to page' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        res.status(200).send("Done");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+
 module.exports = router;
