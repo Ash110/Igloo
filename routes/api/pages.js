@@ -11,9 +11,11 @@ const router = express.Router();
 //access   Private
 
 router.post('/getPages', auth, async (req, res) => {
+    let { userId } = req.body;
+    if (!userId) userId = req.id;
     const session = neodriver.session();
     try {
-        const neo_res = await session.run(`MATCH (u:User {id : "${req.id}"})-[:HAS_PAGE]->(pg:Page) RETURN pg.id, pg.name, pg.description ORDER BY pg.id`);
+        const neo_res = await session.run(`MATCH (u:User {id : "${userId}"})-[:HAS_PAGE]->(pg:Page) RETURN pg.id, pg.name, pg.description ORDER BY pg.id`);
         pages = [];
         neo_res.records.map((record) => pages.push(record._fields));
         res.status(200).send({ pages });
@@ -70,7 +72,7 @@ router.post('/createPage', auth, async (req, res) => {
 //access   Private
 
 router.post('/getPageDetails', auth, async (req, res) => {
-    const { pageId} = req.body;
+    const { pageId } = req.body;
     try {
         const page = await Page.findById(pageId).populate('creator', 'name username');
         const { name, description, category, creator } = page;

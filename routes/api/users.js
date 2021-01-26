@@ -229,8 +229,8 @@ router.post('/getUserDetails', auth, async (req, res) => {
     const { userId } = req.body;
     try {
         const user = await User.findById(userId);
-        const { name, username, profilePicture, friends, bio, headerImage } = user;
-        var userDetails = { name, username, profilePicture, friends: friends.length, bio, headerImage };
+        const { name, username, profilePicture, friends, bio, headerImage, pages } = user;
+        var userDetails = { name, username, profilePicture, friends: friends.length, bio, headerImage, pages : pages.length };
         const session = neodriver.session();
         try {
             const neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)-[:FOLLOWS]-(u2))`);
