@@ -33,7 +33,6 @@ router.post('/getUserPosts', auth, async (req, res) => {
         try {
             const session = neodriver.session();
             const b = new Date().toISOString();
-            console.log(`MATCH (:User{id:"${userId}"})-[:HAS_POST]->(p:Post)<-[:IN_FEED]-(:User{id:"${req.id}"}) WHERE p.expiryDate > "${b}" RETURN p.id`);
             const neo_res = await session.run(`MATCH (:User{id:"${userId}"}) -[:HAS_POST]->(p:Post)<-[:IN_FEED]-(:User{id:"${req.id}"}) WHERE p.expiryDate > "${b}" RETURN p.id`);
             posts = [];
             neo_res.records.map((record) => posts.push(record._fields[0]));

@@ -70,7 +70,7 @@ router.post('/createPage', auth, async (req, res) => {
 //access   Private
 
 router.post('/getPageDetails', auth, async (req, res) => {
-    const { pageId } = req.body;
+    const { pageId} = req.body;
     try {
         const page = await Page.findById(pageId).populate('creator', 'name username');
         const { name, description, category, creator } = page;
@@ -79,6 +79,10 @@ router.post('/getPageDetails', auth, async (req, res) => {
         try {
             const neo_res = await session.run(`MATCH (u),(pg) WHERE u.id = "${req.id}" AND pg.id = "${pageId}" RETURN EXISTS((u)-[:SUBSCRIBED_TO]->(pg))`);
             pageDetails.isSubscribed = neo_res.records[0]._fields[0];
+            const neo_res_posts = await session.run(`MATCH (pg:Page{id:"${pageId}"})-[php:PAGE_HAS_POST]->(p:Post) RETURN p.id`);
+            posts = [];
+            neo_res_posts.records.map((record) => posts.push(record._fields[0]));
+            pageDetails.posts = posts;
         } catch (e) {
             console.log(e);
             await session.close()

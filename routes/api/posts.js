@@ -86,7 +86,7 @@ router.post('/createPageImagePost', auth, async (req, res) => {
         const session = neodriver.session();
         try {
             await session.run(`CREATE (p:Post {id : "${postId}", type : "image", expiryDate : "${expiryDate}", publishDate:"${new Date().toISOString()}" }) return p`);
-            await session.run(`MATCH (pg:Page{id : "${selectedPage}"}),(p:Post {id : "${post.id}"}) CREATE (pg)-[:PAGE_HAS_POST]->(p) return pg.id`);
+            await session.run(`MATCH (pg:Page{id : "${selectedPage}"}),(p:Post {id : "${postId}"}) CREATE (pg)-[:PAGE_HAS_POST]->(p) return pg.id`);
             await session.run(`MATCH (u:User)-[:SUBSCRIBED_TO]->(pg:Page{id: "${selectedPage}"})-[:PAGE_HAS_POST]->(p:Post{id:"${postId}"}) MERGE (u)-[:IN_FEED]->(p) return u.id`);
         } catch (e) {
             console.log(e);
@@ -296,9 +296,10 @@ router.post('/createPageSongPost', auth, async (req, res) => {
         await Page.findOneAndUpdate({ _id: selectedPage }, { $push: { posts: [post._id] } });
         const session = neodriver.session();
         try {
-            await session.run(`CREATE (p:Post {id : "${post.id}", type : "text", expiryDate : "${expiryDate}", publishDate:"${new Date().toISOString()}" }) return p`);
-            await session.run(`MATCH (pg:Post{id : "${selectedPage}"}),(p:Post {id : "${post.id}"}) CREATE (pg)-[:PAGE_HAS_POST]->(p) return pg.id`);
-            await session.run(`MATCH (u:User)-[:SUBSCRIBED_TO]->(pg:Page{id: "${selectedPage}"})-[:PAGE_HAS_POST]->(p:Post{id:"${post.id}"}) MERGE (u)-[:IN_FEED]->(p) return u.id`);
+            await session.run(`CREATE (p:Post {id : "${post.id}", type : "song", expiryDate : "${expiryDate}", publishDate:"${new Date().toISOString()}" }) return p`);
+            await session.run(`MATCH (pg:Page{id : "${selectedPage}"}),(p:Post {id : "${post.id}"}) CREATE (pg)-[:PAGE_HAS_POST]->(p) return pg.id`);
+            var x = await session.run(`MATCH (u:User)-[:SUBSCRIBED_TO]->(pg:Page{id: "${selectedPage}"})-[:PAGE_HAS_POST]->(p:Post{id:"${post.id}"}) MERGE (u)-[:IN_FEED]->(p) return u.id`);
+            console.log(x);
         } catch (e) {
             console.log(e);
             await session.close()
@@ -405,7 +406,7 @@ router.post('/createPageMoviePost', auth, async (req, res) => {
         const session = neodriver.session();
         try {
             await session.run(`CREATE (p:Post {id : "${post.id}", type : "text", expiryDate : "${expiryDate}", publishDate:"${new Date().toISOString()}" }) return p`);
-            await session.run(`MATCH (pg:Post{id : "${selectedPage}"}),(p:Post {id : "${post.id}"}) CREATE (pg)-[:PAGE_HAS_POST]->(p) return pg.id`);
+            await session.run(`MATCH (pg:Page{id : "${selectedPage}"}),(p:Post {id : "${post.id}"}) CREATE (pg)-[:PAGE_HAS_POST]->(p) return pg.id`);
             await session.run(`MATCH (u:User)-[:SUBSCRIBED_TO]->(pg:Page{id: "${selectedPage}"})-[:PAGE_HAS_POST]->(p:Post{id:"${post.id}"}) MERGE (u)-[:IN_FEED]->(p) return u.id`);
         } catch (e) {
             console.log(e);
@@ -426,21 +427,23 @@ router.post('/createPageMoviePost', auth, async (req, res) => {
 //access   Private
 
 router.post('/getPostDetails', auth, async (req, res) => {
-    const { postId } = req.body;
+    const { postId, isPagePost } = req.body;
     try {
-        const checkSession = neodriver.session();
-        try {
-            const neo_res_check = await checkSession.run(`return EXISTS((:User{ id : "${req.id}" })-[:IN_FEED]->(:Post{id : "${postId}"}))`);
-            const canView = neo_res_check.records[0]._fields[0];
-            if (!canView) {
-                return res.status(403).send("Cannot View the post");
+        if (!isPagePost) {
+            const checkSession = neodriver.session();
+            try {
+                const neo_res_check = await checkSession.run(`return EXISTS((:User{ id : "${req.id}" })-[:IN_FEED]->(:Post{id : "${postId}"}))`);
+                const canView = neo_res_check.records[0]._fields[0];
+                if (!canView) {
+                    return res.status(403).send("Cannot View the post");
+                }
+            } catch (e) {
+                console.log(e);
+                await checkSession.close()
+                return res.status(500).send("Unable to get post");
+            } then = async () => {
+                await checkSession.close()
             }
-        } catch (e) {
-            console.log(e);
-            await checkSession.close()
-            return res.status(500).send("Unable to get post");
-        } then = async () => {
-            await checkSession.close()
         }
         const post = await Post.findById(postId).populate({ path: 'creator page', 'select': 'name profilePicture username' });
         if (post) {
@@ -511,7 +514,6 @@ router.post('/likePost', auth, async (req, res) => {
     const { postId } = req.body;
     try {
         const post = await Post.findById(postId);
-        console.log(`MATCH (:User{ id : "${req.id}" }), (:Post{id : "${postId}"}) CREATE (u)-[:LIKES]->(p)`)
         if (post) {
             const session = neodriver.session();
             try {
