@@ -616,4 +616,30 @@ router.post('/changeBio', auth, async (req, res) => {
     }
 });
 
+//@route   /api/users/getUserFriendSuggestions
+//@desc    Get friend suggestions for user
+//access   Private
+
+router.post('/getUserFriendSuggestions', auth, async (req, res) => {
+    try {
+        let suggestions = [];
+        const session = neodriver.session();
+        try {
+            const neo_suggestion = await session.run(`Match(u1:User{id :"${req.id}"})-[:FOLLOWS]-(:User)-[f:FOLLOWS]-(u2:User) WHERE NOT EXISTS((u1)-[:FOLLOWS]-(u2))  return u2.id, u2.name,u2.username,u2.profilePicture, COUNT(f) ORDER BY COUNT(f) DESC`);
+            neo_suggestion.records.map((suggestion) => suggestions.push(suggestion._fields));
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Failed to get suggestions");
+        } then = async () => {
+            await session.close()
+        }
+        console.log(suggestions);
+        return res.status(200).send({suggestions});
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 module.exports = router;
