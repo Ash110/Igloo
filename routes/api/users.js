@@ -501,6 +501,16 @@ router.post('/changeUsername', auth, async (req, res) => {
             if (!user.usernameModifiedDate) {
                 await User.findOneAndUpdate({ _id: req.id }, { username: username.toLowerCase() });
                 await User.findOneAndUpdate({ _id: req.id }, { usernameModifiedDate: new Date() });
+                const session = neodriver.session();
+                try {
+                    await session.run(`MATCH (u:User{id : "${req.id}"}) SET u.username = "${username}"`);
+                } catch (e) {
+                    console.log(e);
+                    await session.close()
+                    return res.status(500).send("Failed to update");
+                } then = async () => {
+                    await session.close()
+                }
                 return res.status(200).send();
             }
             let lastModifiedDate = new Date(user.usernameModifiedDate);
@@ -509,6 +519,16 @@ router.post('/changeUsername', auth, async (req, res) => {
             if (differenceInDays >= 14) {
                 await User.findOneAndUpdate({ _id: req.id }, { username: username.toLowerCase() });
                 await User.findOneAndUpdate({ _id: req.id }, { usernameModifiedDate: new Date() });
+                const session = neodriver.session();
+                try {
+                    await session.run(`MATCH (u:User{id : "${req.id}"}) SET u.username = "${username}"`);
+                } catch (e) {
+                    console.log(e);
+                    await session.close()
+                    return res.status(500).send("Failed to update");
+                } then = async () => {
+                    await session.close()
+                }
                 return res.status(200).send();
             } else {
                 return res.status(403).send("Username can only be changed once every 14 days.");
@@ -536,6 +556,16 @@ router.post('/changeName', auth, async (req, res) => {
         if (!user.nameModifiedDate) {
             await User.findOneAndUpdate({ _id: req.id }, { name });
             await User.findOneAndUpdate({ _id: req.id }, { nameModifiedDate: new Date() });
+            const session = neodriver.session();
+            try {
+                await session.run(`MATCH (u:User{id : "${req.id}"}) SET u.name = "${name}"`);
+            } catch (e) {
+                console.log(e);
+                await session.close()
+                return res.status(500).send("Failed to update");
+            } then = async () => {
+                await session.close()
+            }
             return res.status(200).send();
         }
         let lastModifiedDate = new Date(user.nameModifiedDate);
@@ -544,6 +574,16 @@ router.post('/changeName', auth, async (req, res) => {
         if (differenceInDays >= 7) {
             await User.findOneAndUpdate({ _id: req.id }, { name });
             await User.findOneAndUpdate({ _id: req.id }, { nameModifiedDate: new Date() });
+            const session = neodriver.session();
+            try {
+                await session.run(`MATCH (u:User{id : "${req.id}"}) SET u.name = "${name}"`);
+            } catch (e) {
+                console.log(e);
+                await session.close()
+                return res.status(500).send("Failed to update");
+            } then = async () => {
+                await session.close()
+            }
             return res.status(200).send();
         } else {
             return res.status(403).send("Name can only be changed once every 7 days.");
