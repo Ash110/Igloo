@@ -15,7 +15,7 @@ const router = express.Router();
 
 router.post('/uploadProfilePicture', auth, (req, res) => {
     //Set storage engine
-    var imageName='';
+    var imageName = '';
     const storage = multer.diskStorage({
         destination: './images/profilepictures/',
         filename: (req, file, callback) => {
@@ -27,14 +27,14 @@ router.post('/uploadProfilePicture', auth, (req, res) => {
     //Initialise Upload
     const upload = multer({ storage }).single('profilepicture');
     //Start the upload
-    upload(req,res,async(err) => {
-        if(err){
+    upload(req, res, async (err) => {
+        if (err) {
             console.log(err);
             return res.status(500).send("Server Error");
-        }else{
+        } else {
             console.log(req.file);
             console.log(`Match (u:User {id : "${req.id}"}) SET u.profilePicture = "${imageName}"`);
-            await User.findOneAndUpdate({_id : req.id, profilePicture : imageName});
+            await User.findOneAndUpdate({ _id: req.id }, { profilePicture: imageName });
             const session = neodriver.session();
             try {
                 await session.run(`Match (u:User {id : "${req.id}"}) SET u.profilePicture = "${imageName}"`);
@@ -117,12 +117,12 @@ router.post('/uploadImagePost', auth, (req, res) => {
         } else {
             console.log(req.file);
             const post = new Post({
-                creator : req.id,
-                isText : false,
-                image : imageName,
+                creator: req.id,
+                isText: false,
+                image: imageName,
             });
             await post.save();
-            return res.status(200).send({imageName, postId : post._id});
+            return res.status(200).send({ imageName, postId: post._id });
         }
     });
 });
@@ -156,7 +156,7 @@ router.post('/uploadPageImagePost', auth, (req, res) => {
                 creator: req.id,
                 isText: false,
                 image: imageName,
-                isPagePost : true,
+                isPagePost: true,
             });
             await post.save();
             return res.status(200).send({ imageName, postId: post._id });
