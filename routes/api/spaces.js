@@ -66,7 +66,7 @@ router.post('/createDiscussionRoom', auth, async (req, res) => {
         await room.save();
         const session = neodriver.session();
         try {
-            await session.run(`CREATE (r:Room {id : "${room._id}", type : "discussion", publishDate:"${new Date().toISOString()}" }) return r`);
+            await session.run(`CREATE (r:Room {id : "${room._id}", type : "discussion", publishDate:"${new Date().toISOString()}" , isGlobal : ${isGlobal}}) return r`);
             await session.run(`MATCH (u:User{id : "${req.id}"}),(r:Room {id : "${room._id}"}) CREATE (u)-[:HAS_ROOM]->(r) return u.name`);
             await session.run(`MATCH (u:User{id : "${req.id}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
             selectedFriends.map(async (friend) => {
@@ -133,8 +133,18 @@ router.post('/getRoomDetails', auth, async (req, res) => {
 
 router.post('/getGlobalRooms', auth, async (req, res) => {
     try {
+        const session = neodriver.session();
         let rooms = [];
-        rooms = await Space.find({ isGlobal: true }).select('_id');
+        try {
+            const neo_res = await session.run(`MATCH (r:Room) WHERE r.isGlobal=true return r.id`);
+            neo_res.records.map((room) => rooms.push(room._fields[0]));
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to fetch rooms");
+        } then = async () => {
+            await session.close()
+        }
         return res.status(200).send({ rooms });
     } catch (err) {
         console.log(err);
@@ -175,7 +185,7 @@ router.post('/createRoomFromTemplate', auth, async (req, res) => {
         await Space.findByIdAndUpdate(roomId, { token });
         const session = neodriver.session();
         try {
-            await session.run(`CREATE (r:Room {id : "${room._id}", type : "discussion", publishDate:"${new Date().toISOString()}" }) return r`);
+            await session.run(`CREATE (r:Room {id : "${room._id}", type : "discussion", publishDate:"${new Date().toISOString()}" , isGlobal : ${room.isGlobal}}) return r`);
             await session.run(`MATCH (u:User{id : "${req.id}"}),(r:Room {id : "${room._id}"}) CREATE (u)-[:HAS_ROOM]->(r) return u.name`);
             await session.run(`MATCH (u:User{id : "${req.id}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
             room.members.map(async (friend) => {
