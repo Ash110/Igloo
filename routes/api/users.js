@@ -29,9 +29,20 @@ router.post('/register',
     ]
     , async (req, res) => {
         const { name, email, password, confirmPassword, username } = req.body;
+        let { birthDate } = req.body;
+        birthDate = new Date(Date.parse(birthDate));
+        let today = new Date();
+        var age = today.getFullYear() - birthDate.getFullYear();
+        var m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
+        }
+        if (age < 13) {
+            return res.status(400).json({ errors: [{ msg: 'You need to be atleast 13 years of age to register' }] });
         }
         //Check if passwords are same
         if (!(password === confirmPassword)) {
@@ -62,7 +73,8 @@ router.post('/register',
                 password,
                 username: username.toLowerCase(),
                 bio: "",
-                profilePicture: "user.png"
+                profilePicture: "user.png",
+                dateOfBirth: birthDate,
             });
             const salt = await bcrypt.genSalt(10);
             user.password = await bcrypt.hash(password, salt);
@@ -635,7 +647,7 @@ router.post('/getUserFriendSuggestions', auth, async (req, res) => {
             await session.close()
         }
         console.log(suggestions);
-        return res.status(200).send({suggestions});
+        return res.status(200).send({ suggestions });
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
