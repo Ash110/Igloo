@@ -1,0 +1,207 @@
+@font-face {
+    font-family: Bebas;
+    src: url('./assets/BebasKai.otf');
+}
+
+#bg {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-image: url('./assets/LandingPageBackground.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+#title {
+    font-family: 'Bebas';
+    position: absolute;
+    top: 10%;
+    left: 5%;
+    font-size: 5rem;
+    color: #292A2D;
+}
+
+#tagline {
+    position: absolute;
+    color: #47536B;
+    font-family: 'Bebas';
+    top: 27%;
+    left: 5%;
+    font-size: 3rem;
+}
+
+#comingsoon {
+    position: absolute;
+    color: #47536B;
+    font-family: 'Bebas';
+    top: 45%;
+    left: 5%;
+    font-size: 1rem;
+}
+
+#play {
+    position: absolute;
+    top: 49%;
+    left: 5%;
+}
+
+#emailsignup {
+    position: absolute;
+    top: 70%;
+    left: 5%;
+    width: 50%;
+    height: 50px;
+    background-color: rgba(245.44, 245.44, 245.44, 1);
+    border: none;
+}
+
+#emailsignup:focus {
+    border: none;
+    outline: none;
+}
+
+#submit {
+    position: absolute;
+    background: #FD4F50;
+    color: white;
+    font-family: 'Bebas';
+    top: 80%;
+    left: 5%;
+    font-size: 1rem;
+    padding: 10px;
+    outline: none;
+    border: none;
+}
+
+#submit:hover {
+    position: absolute;
+    background: #FD4F50;
+    color: white;
+    font-family: 'Bebas';
+    top: 79%;
+    left: 5%;
+    font-size: 1rem;
+    padding: 10px;
+}
+
+#submitbottom {
+    position: absolute;
+    background: #ca2828;
+    color: #ca2828;
+    font-family: 'Bebas';
+    top: 80%;
+    left: 5%;
+    font-size: 1rem;
+    padding: 10px;
+    z-index: -1;
+}
+
+#beta {
+    position: absolute;
+    top: 85%;
+    left: 5%;
+    font-size: 1.2rem;
+    padding: 20px;
+}
+
+/* For Mobile */
+@media only screen and (max-width: 980px) {
+    #bg {
+        position: absolute;
+        top: 0%;
+        left: 0%;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        background-image: url('./assets/LandingPageBackground\ Mobile.png');
+        background-repeat: no-repeat;
+        background-size: cover;
+    }
+
+    #title {
+        font-family: 'Bebas';
+        position: absolute;
+        top: 8%;
+        left: 5%;
+        font-size: 10rem;
+        color: #292A2D;
+    }
+
+    #tagline {
+        position: absolute;
+        color: #47536B;
+        font-family: 'Bebas';
+        top: 20%;
+        left: 5%;
+        font-size: 5rem;
+    }
+
+    #comingsoon {
+        position: absolute;
+        color: #47536B;
+        font-family: 'Bebas';
+        top: 30%;
+        left: 5%;
+        font-size: 3rem;
+    }
+
+    #play {
+        position: absolute;
+        top: 40%;
+        left: 5%;
+        height: 10%;
+        width: auto;
+    }
+
+    #emailsignup {
+        position: absolute;
+        top: 55%;
+        left: 5%;
+        width: 80%;
+        height: 60px;
+        background-color: rgba(245.44, 245.44, 245.44, 1);
+        border: 1px solid black;
+    }
+
+    #emailsignup:focus {
+        border: none;
+        outline: none;
+    }
+
+    #submit {
+        position: absolute;
+        background: #FD4F50;
+        color: white;
+        font-family: 'Bebas';
+        top: 65%;
+        left: 5%;
+        font-size: 3rem;
+        padding: 20px;
+        outline: none;
+        border: none;
+    }
+
+    #submitbottom {
+        position: absolute;
+        background: #ca2828;
+        color: #ca2828;
+        font-family: 'Bebas';
+        top: 65%;
+        left: 5%;
+        font-size: 3rem;
+        padding: 20px;
+        padding: 10px;
+        z-index: -1;
+    }
+
+    #beta {
+        position: absolute;
+        top: 75%;
+        left: 5%;
+        font-size: 2rem;
+        padding : 20px;
+    }
+}

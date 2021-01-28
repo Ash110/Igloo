@@ -60,7 +60,7 @@ app.get('*', (req, res) => {
         const resolvingPath = path.resolve(
             __dirname,
             'client',
-            'build',
+            // 'build',
             'index.html'
         );
         return res.sendFile(resolvingPath);
@@ -70,7 +70,7 @@ app.get('*', (req, res) => {
             const resolvingPath = path.resolve(
                 __dirname,
                 'client',
-                'build',
+                // 'build',
                 'errorPage.html'
             );
             return res.sendFile(resolvingPath);
