@@ -78,7 +78,7 @@ module.exports = template =(name, ) => `<!DOCTYPE html
                                             And thus, was born this platform.
                                             <br>
                                             <br>
-                                            Go ahead, and set up your profile
+                                            Go ahead, set up your profile, invite your friends and enjoy a true social media experience built around you.
                                         </p>
 
                                         <table class="body-action" align="center" width="100%" cellpadding="0"
@@ -101,7 +101,7 @@ module.exports = template =(name, ) => `<!DOCTYPE html
                                                                             <a href="https://igloosocial.com/profile"
                                                                                 class="button button-green"
                                                                                 target="_blank"
-                                                                                style="-webkit-text-size-adjust: none; background: #22BC66; border-color: #22bc66; border-radius: 3px; border-style: solid; border-width: 10px 18px; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.16); box-sizing: border-box; color: #FFF; display: inline-block; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; text-decoration: none;">Edit my profile!</a>
+                                                                                style="-webkit-text-size-adjust: none; background: #22BC66; border-color: #22bc66; border-radius: 3px; border-style: solid; border-width: 10px 18px; box-shadow: 0 2px 3px rgba(0, 0, 0, 0.16); box-sizing: border-box; color: #FFF; display: inline-block; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; text-decoration: none;">Let's get started!</a>
                                                                         </td>
                                                                     </tr>
                                                                 </table>
