@@ -7,8 +7,10 @@ const Group = require('../../models/Group');
 const auth = require('../../middleware/auth')
 const neodriver = require('../../neo4jconnect');
 const sendWelcomeMail = require('../email/welcomeMail');
+const resetPasswordMail = require('../email/resetPasswordMail');
 const { check, validationResult } = require('express-validator');
 const { sendActionNotification, userPageNotification } = require('../pushNotifications/actionNotification');
+const { removeBasicRoom, removeResetCode } = require('../../agenda/agendaFunctions');
 
 const router = express.Router();
 
@@ -653,5 +655,65 @@ router.post('/getUserFriendSuggestions', auth, async (req, res) => {
         return res.status(500).send("Server Error");
     }
 });
+
+//@route   /api/users/forgotPassword
+//@desc    Send a password reset mail for user
+//access   Public
+
+router.post('/forgotPassword',
+    async (req, res) => {
+        const { email } = req.body;
+        validateEmail = (email) => {
+            var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+            return re.test(String(email).toLowerCase());
+        }
+        try {
+            let user;
+            if (validateEmail(email)) {
+                user = await User.findOne({ email });
+            } else {
+                user = await User.findOne({ username: email.toLowerCase() });
+            }
+            if (!user) {
+                return res.status(400).json({ errors: [{ msg: "User not found. Please check the information." }] });
+            }
+            const resetcode = Math.round((Math.pow(36, 9) - Math.random() * Math.pow(36, 8))).toString(36).slice(1).toUpperCase();
+            await User.findOneAndUpdate({ username: user.username }, { resetcode });
+            removeResetCode(user.username);
+            resetPasswordMail(user.name, user.email, resetcode);
+            res.status(200).send();
+        } catch (err) {
+            console.log(err.message);
+            return res.status(500).json({ errors: [{ msg: "Server Error" }] });
+        }
+    });
+//@route   /api/users/resetPassword
+//@desc    Reset a user's password
+//access   Public
+
+router.post('/resetPassword',
+    async (req, res) => {
+        const { password, confirmPassword, resetcode } = req.body;
+        try {
+            if (password.length < 6) {
+                return res.status(403).json({ errors: [{ msg: "Password cannot be shorter than 6 characters" }] });
+            }
+            if (password !== confirmPassword) {
+                return res.status(403).json({ errors: [{ msg: "Password do not match" }] });
+            }
+            const user = await User.findOne({ resetcode : resetcode.toUpperCase() }).select('_id');
+            if (!user) {
+                return res.status(403).json({ errors: [{ msg: "The code you have entered is incorrect or has expired" }] });
+            }
+            const salt = await bcrypt.genSalt(10);
+            const hashedpass = await bcrypt.hash(password, salt);
+            console.log(user, password, hashedpass);
+            await User.findByIdAndUpdate(user._id, { password: hashedpass });
+            res.status(200).send();
+        } catch (err) {
+            console.log(err.message);
+            return res.status(500).json({ errors: [{ msg: "Server Error" }] });
+        }
+    });
 
 module.exports = router;

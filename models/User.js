@@ -104,6 +104,9 @@ const UserModel = new Schema({
     },
     usernameModifiedDate: {
         type: Date,
+    },
+    resetcode: {
+        type: String,
     }
 });
 

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const config = require('config');
 const { agenda } = require('./agenda');
+const User = require('../models/User');
 const neodriver = require('../neo4jconnect');
 
 
@@ -39,6 +40,17 @@ agenda.define('alert basic room expiry', async job => {
     }
 });
 
+agenda.define('remove reset code', async job => {
+    const { username } = job.attrs.data;
+    console.log(`${roomId} being alerted`);
+    try {
+        await User.findOneAndUpdate({ username }, { resetcode: null });
+    } catch (err) {
+        console.log("Failed to reach chat server");
+        console.log(err);
+    }
+});
+
 const removeBasicRoom = async (roomId) => {
     await agenda.start();
     await agenda.schedule('in 15 minutes', 'remove basic room', { roomId });
@@ -49,4 +61,9 @@ const alertBasicRoomExpiry = async (roomId) => {
     await agenda.schedule('in 14 minutes', 'alert basic room expiry', { roomId });
 }
 
-module.exports = { removeBasicRoom, alertBasicRoomExpiry };
+const removeResetCode = async (username) => {
+    await agenda.start();
+    await agenda.schedule('in 30 minutes', 'remove reset code', { username });
+}
+
+module.exports = { removeBasicRoom, alertBasicRoomExpiry, removeResetCode };
