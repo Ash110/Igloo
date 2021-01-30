@@ -75,7 +75,7 @@ router.post('/uploadHeaderImage', auth, (req, res) => {
         } else {
             console.log(req.file);
             console.log(`Match (u:User {id : "${req.id}"}) SET u.headerImage = "${imageName}"`);
-            await User.findOneAndUpdate({ _id: req.id, headerImage: imageName });
+            await User.findOneAndUpdate({ _id: req.id}, {headerImage: imageName });
             const session = neodriver.session();
             try {
                 await session.run(`Match (u:User {id : "${req.id}"}) SET u.headerImage = "${imageName}"`);
