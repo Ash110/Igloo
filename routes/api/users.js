@@ -331,7 +331,7 @@ router.post('/followUser', auth, async (req, res) => {
         const user = await User.findById(userId).select('notificationTokens');
         if (user.notificationTokens && user.notificationTokens.length > 0) {
             const sender = await User.findById(req.id).select('name');
-            sendActionNotification(user.notificationTokens, `${sender.name} has accepted your follow request`, "", "notifications");
+            sendActionNotification(user.notificationTokens, `${sender.name} has requested to follow you`, "", "notifications");
         }
         User.findByIdAndUpdate(userId, { newNotifications: true });
         res.status(200).send("Request sent!");
