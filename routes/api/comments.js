@@ -89,8 +89,9 @@ router.post('/createComment', auth, async (req, res) => {
 //access   Private
 
 router.post('/getCommentDetails', auth, async (req, res) => {
-    const { commentId } = req.body;
+    let { commentId } = req.body;
     try {
+        commentId = (commentId.replace(/\"/g, ""))
         const comment = await Comment.findById(commentId).populate('creator', 'name profilePicture').select('text creator isReply likes replies');
         let response = {
             text: comment.text,
@@ -189,7 +190,8 @@ router.post('/unlikeComment', auth, async (req, res) => {
 //access   Private
 
 router.post('/createCommentReply', auth, async (req, res) => {
-    const { parentComment, text, isReply } = req.body;
+    let { parentComment, text, isReply } = req.body;
+    parentComment = (parentComment.replace(/\"/g, ""))
     try {
         let comment = new Comment({
             parentComment,
