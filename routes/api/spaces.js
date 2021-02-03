@@ -112,6 +112,7 @@ router.post('/getRoomDetails', auth, async (req, res) => {
             .populate('creator', 'name profilePicture')
             .select('name description creator roomToken isGlobal')
         if (room) {
+            console.log()
             const memberDetails = await axios.post(`${config.get('chatServerUrl')}/getRoomMembers`, {
                 roomId,
             });
@@ -177,7 +178,7 @@ router.post('/checkRoomPermission', auth, async (req, res) => {
         }
         let room;
         if (response.hasPermission) {
-            room = await Space.findById(roomId).select('name token isGlobal');
+            room = await Space.findById(roomId).select('name roomToken isGlobal');
         }
         response.room = room;
         return res.status(200).send(response);
@@ -217,7 +218,8 @@ router.post('/createRoomFromTemplate', auth, async (req, res) => {
         const currentTime = Math.floor(Date.now() / 1000);
         const privilegeExpireTime = currentTime + expireTime;
         const token = RtcTokenBuilder.buildTokenWithUid(config.get('agoraAppID'), config.get('agoraAppCertificate'), room.name, uid, role, privilegeExpireTime);
-        await Space.findByIdAndUpdate(roomId, { token });
+        console.log(room.token, token);
+        await Space.findByIdAndUpdate(roomId, { roomToken : token });
         const session = neodriver.session();
         try {
             await session.run(`CREATE (r:Room {id : "${room._id}", type : "discussion", publishDate:"${new Date().toISOString()}" , isGlobal : ${room.isGlobal}}) return r`);
