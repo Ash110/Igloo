@@ -151,6 +151,41 @@ router.post('/getGlobalRooms', auth, async (req, res) => {
         return res.status(500).send("Server Error");
     }
 });
+//@route   POST /api/spaces/checkRoomPermission
+//@desc    Check if user has permission to enter room
+//access   Private
+
+router.post('/checkRoomPermission', auth, async (req, res) => {
+    const { roomId } = req.body;
+    let response = {
+        hasPermission: false,
+        isSpeaker: false,
+    }
+    try {
+        const session = neodriver.session();
+        try {
+            const neo_res = await session.run(`MATCH (r:Room{id : "${roomId}"}) return r.isGlobal, EXISTS((:User{id :"${req.id}"})-[:CAN_ENTER_ROOM]->(r))`);
+            response.hasPermission = (neo_res.records[0]._fields[0] || neo_res.records[0]._fields[1]);
+            response.isSpeaker = neo_res.records[0]._fields[1];
+            console.log(response);
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to fetch rooms");
+        } then = async () => {
+            await session.close()
+        }
+        let room;
+        if (response.hasPermission) {
+            room = await Space.findById(roomId).select('name token isGlobal');
+        }
+        response.room = room;
+        return res.status(200).send(response);
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
 
 //@route   POST /api/spaces/getUserTemplates
 //@desc    Fetch all user templates

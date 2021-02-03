@@ -640,7 +640,7 @@ router.post('/getUserFriendSuggestions', auth, async (req, res) => {
         let suggestions = [];
         const session = neodriver.session();
         try {
-            const neo_suggestion = await session.run(`Match(u1:User{id :"${req.id}"})-[:FOLLOWS]-(:User)-[f:FOLLOWS]-(u2:User) WHERE NOT EXISTS((u1)-[:FOLLOWS]-(u2))  return u2.id, u2.name,u2.username,u2.profilePicture, COUNT(f) ORDER BY COUNT(f) DESC`);
+            const neo_suggestion = await session.run(`Match(u1:User{id :"${req.id}"})-[:FOLLOWS]-(u3:User)-[f:FOLLOWS]-(u2:User) WHERE NOT EXISTS((u1)-[:FOLLOWS]-(u2)) AND NOT u3.username="igloo" return u2.id, u2.name,u2.username,u2.profilePicture, COUNT(f) ORDER BY COUNT(f) DESC`);
             neo_suggestion.records.map((suggestion) => suggestions.push(suggestion._fields));
         } catch (e) {
             console.log(e);
