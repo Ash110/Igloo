@@ -8,6 +8,7 @@ const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
 const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
 const { removeBasicRoom, alertBasicRoomExpiry } = require('../../agenda/agendaFunctions');
+const { sendRoomInvitationNotification } = require('../pushNotifications/roomInvitationNotification');
 
 const router = express.Router();
 
@@ -81,6 +82,12 @@ router.post('/createDiscussionRoom', auth, async (req, res) => {
         } then = async () => {
             await session.close()
         }
+        sendRoomInvitationNotification({
+            selectedUsers: selectedFriends,
+            roomId: room._id,
+            roomName: name,
+            sender: req.id,
+        });
         try {
             await axios.post(`${config.get('chatServerUrl')}/registerNewRoom`, {
                 roomId: room._id,
@@ -168,7 +175,6 @@ router.post('/checkRoomPermission', auth, async (req, res) => {
             const neo_res = await session.run(`MATCH (r:Room{id : "${roomId}"}) return r.isGlobal, EXISTS((:User{id :"${req.id}"})-[:CAN_ENTER_ROOM]->(r))`);
             response.hasPermission = (neo_res.records[0]._fields[0] || neo_res.records[0]._fields[1]);
             response.isSpeaker = neo_res.records[0]._fields[1];
-            console.log(response);
         } catch (e) {
             console.log(e);
             await session.close()
@@ -218,8 +224,7 @@ router.post('/createRoomFromTemplate', auth, async (req, res) => {
         const currentTime = Math.floor(Date.now() / 1000);
         const privilegeExpireTime = currentTime + expireTime;
         const token = RtcTokenBuilder.buildTokenWithUid(config.get('agoraAppID'), config.get('agoraAppCertificate'), room.name, uid, role, privilegeExpireTime);
-        console.log(room.token, token);
-        await Space.findByIdAndUpdate(roomId, { roomToken : token });
+        await Space.findByIdAndUpdate(roomId, { roomToken: token });
         const session = neodriver.session();
         try {
             await session.run(`CREATE (r:Room {id : "${room._id}", type : "discussion", publishDate:"${new Date().toISOString()}" , isGlobal : ${room.isGlobal}}) return r`);
@@ -247,6 +252,12 @@ router.post('/createRoomFromTemplate', auth, async (req, res) => {
         }
         removeBasicRoom(room._id);
         alertBasicRoomExpiry(room._id);
+        sendRoomInvitationNotification({
+            selectedUsers: room.members,
+            roomId: room._id,
+            roomName: room.name,
+            sender: req.id,
+        });
         return res.status(200).send({
             roomId: room._id,
             roomToken: token,
