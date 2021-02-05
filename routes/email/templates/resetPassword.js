@@ -112,6 +112,11 @@ module.exports = template = (name,code) => `<!DOCTYPE html
                                             align="left">Thanks,
                                             <br />Team Igloo
                                         </p>
+                                        <br><br>
+                                        <p style="box-sizing: border-box; color: #74787E; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 16px; line-height: 1.5em; margin-top: 0;"
+                                            align="left">
+                                            PS : This is an automated mail, we cannot see any replies to this mail address. If you'd like to contact us, reach out at support@igloosocial.com
+                                            </p>
 
                                     </td>
                                 </tr>

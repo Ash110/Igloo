@@ -29,4 +29,6 @@ sendWelcomeEmail = (name, email) => {
     });
 }
 
+sendWelcomeEmail("Ashwin", "ashwin.alaparthi@gmail.com")
+
 module.exports = sendWelcomeEmail

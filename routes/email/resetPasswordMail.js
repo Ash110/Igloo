@@ -8,7 +8,7 @@ resetPasswordMail = (name, email, code) => {
 
     const mg = mailgun({ apiKey: config.get('mailgun-api'), domain: DOMAIN });
     const mail = mailcomposer({
-        from: 'Igloo <reset-password@igloosocial.com>',
+        from: 'Igloo <noreply@igloosocial.com>',
         to: email,
         subject: 'Password Reset Instructions',
         html: template(name, code),

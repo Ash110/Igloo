@@ -1,4 +1,4 @@
-module.exports = template =(name, ) => `<!DOCTYPE html
+module.exports = template = (name,) => `<!DOCTYPE html
     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
 
@@ -116,6 +116,11 @@ module.exports = template =(name, ) => `<!DOCTYPE html
                                         <p style="box-sizing: border-box; color: #74787E; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 16px; line-height: 1.5em; margin-top: 0;"
                                             align="left">Thanks,
                                             <br />Team Igloo</p>
+                                            <br><br>
+                                        <p style="box-sizing: border-box; color: #74787E; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 16px; line-height: 1.5em; margin-top: 0;"
+                                            align="left">
+                                            PS : This is an automated mail, we cannot see any replies to this mail address. If you'd like to contact us, reach out at support@igloosocial.com
+                                            </p>
                                         
                                     </td>
                                 </tr>
