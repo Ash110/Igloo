@@ -26,7 +26,7 @@ router.post('/searchUsers', auth, async (req, res) => {
 });
 
 //@route   POST /api/search/searchSpotify
-//@desc    Search for spotify
+//@desc    Search spotify
 //access   Private
 
 let token;
@@ -64,7 +64,7 @@ router.post('/searchSpotify', auth, async (req, res) => {
                                 results.push(song);
                             });
                             // console.log(results);
-                            res.status(200).send({results});
+                            res.status(200).send({ results });
                         }).catch((err) => {
                             console.log(err);
                             res.status(500).send("Unable to fetch songs");
@@ -88,7 +88,7 @@ router.post('/searchSpotify', auth, async (req, res) => {
                         song.songArtists = songArtists;
                         results.push(song);
                     });
-                    res.status(200).send({results});
+                    res.status(200).send({ results });
                 }).catch((err) => {
                     console.log(err);
                     res.status(500).send("Unable to fetch songs");
@@ -100,6 +100,30 @@ router.post('/searchSpotify', auth, async (req, res) => {
     }
 });
 
+//@route   POST /api/search/searchImdb
+//@desc    Search IMDb
+//access   Private
 
+router.post('/searchImdb', auth, async (req, res) => {
+    const { searchText, isMovie } = req.body;
+    try {
+        axios.get(`http://www.omdbapi.com/?apikey=${config.get('omdbAPIKey')}&s=${searchText}&type=${isMovie ? "movie" : "series"}`)
+            .then((movieResponse) => {
+                // console.log(songsResponse.data['tracks']['items']);
+                results = [];
+                console.log(movieResponse.data);
+                if (movieResponse.data.Response != 'False') {
+                    results = movieResponse.data.Search;
+                }
+                res.status(200).send({ results });
+            }).catch((err) => {
+                console.log(err);
+                res.status(500).send("Unable to fetch songs");
+            });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
 
 module.exports = router;
