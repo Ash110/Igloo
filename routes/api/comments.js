@@ -223,7 +223,11 @@ router.post('/createCommentReply', auth, async (req, res) => {
 //access   Private
 
 router.post('/deleteComment', auth, async (req, res) => {
-    const { commentId, parentPost, isReply, parentComment } = req.body;
+    let { commentId, parentPost, isReply, parentComment } = req.body;
+    commentId = (commentId.replace(/\"/g, ""))
+    if (parentComment) {
+        parentComment = (parentComment.replace(/\"/g, ""))
+    }
     try {
         if (isReply) {
             await Comment.findOneAndUpdate(
