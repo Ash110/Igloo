@@ -6,6 +6,7 @@ const auth = require('../../middleware/auth');
 const Comment = require('../../models/Comment');
 const neodriver = require('../../neo4jconnect');
 const { sendActionNotification } = require('../pushNotifications/actionNotification');
+const { sendCommentMentionNotification } = require('../pushNotifications/mentionedNotification');
 
 const router = express.Router();
 
@@ -77,7 +78,33 @@ router.post('/createComment', auth, async (req, res) => {
                 sendActionNotification(token, `${senderUser.name} has commented your post`, text, "notifications");
             });
         }
-        res.status(200).send(comment._id);
+        const regexp = /@\w+/g;
+        const b = [...text.matchAll(regexp)];
+        let mentionedUsernames = [];
+        b.map((mention) => mentionedUsernames.push(mention[0].slice(1,)));
+        sendCommentMentionNotification({ mentionedUsernames, commentText: text, sender: req.id });
+        mentionedUsernames.map(async(username) => {
+            const notification = new Notification({
+                trigger: 'commentMention',
+                sender: req.id,
+                triggerPost: parentPost,
+                commentText: text,
+            });
+            await notification.save();
+            await User.findOneAndUpdate({ username }, {
+                $push: {
+                    notifications: {
+                        $each: [notification._id],
+                        $position: 0
+                    }
+                }
+            });
+            await User.findOneAndUpdate({ username }, {
+                newNotifications: true,
+            });
+            await User.findOneAndUpdate({ username }, { $inc: { numberOfNewNotifications: 1 } });
+        });
+        return res.status(200).send(comment._id);
     } catch (err) {
         console.log(err);
         return res.status(500).send("Internal Error");
