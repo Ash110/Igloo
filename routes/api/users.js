@@ -240,11 +240,18 @@ router.post('/updateBio', auth, async (req, res) => {
 //access   Private
 
 router.post('/getUserDetails', auth, async (req, res) => {
-    const { userId } = req.body;
+    let { userId, userUsername, isUsername } = req.body;
+    userUsername = userUsername.slice(1,)
     try {
-        const user = await User.findById(userId);
-        const { name, username, profilePicture, friends, bio, headerImage, pages } = user;
-        var userDetails = { name, username, profilePicture, friends: friends.length, bio, headerImage, pages: pages.length };
+        let user;
+        if (isUsername) {
+            user = await User.findOne({ username: userUsername });
+        } else {
+            user = await User.findById(userId);
+        }
+        const { name, username, profilePicture, friends, bio, headerImage, pages, _id } = user;
+        var userDetails = { name, username, profilePicture, friends: friends.length, bio, headerImage, pages: pages.length, _id };
+        userId = _id;
         const session = neodriver.session();
         try {
             const neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)-[:FOLLOWS]-(u2))`);
@@ -702,7 +709,7 @@ router.post('/resetPassword',
             if (password !== confirmPassword) {
                 return res.status(403).json({ errors: [{ msg: "Password do not match" }] });
             }
-            const user = await User.findOne({ resetcode : resetcode.toUpperCase() }).select('_id');
+            const user = await User.findOne({ resetcode: resetcode.toUpperCase() }).select('_id');
             if (!user) {
                 return res.status(403).json({ errors: [{ msg: "The code you have entered is incorrect or has expired" }] });
             }
