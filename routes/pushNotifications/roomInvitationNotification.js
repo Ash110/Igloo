@@ -15,7 +15,7 @@ const sendRoomInvitationNotification = async ({ selectedUsers, roomId, roomName,
             "click_action": "FLUTTER_NOTIFICATION_CLICK",
         },
         data: {
-            roomId,
+            roomId : roomId.toString(),
         },
     };
     selectedUsers.map(async (user) => {
