@@ -241,7 +241,7 @@ router.post('/updateBio', auth, async (req, res) => {
 
 router.post('/getUserDetails', auth, async (req, res) => {
     let { userId, userUsername, isUsername } = req.body;
-    userUsername = userUsername.slice(1,)
+    userUsername = userUsername.replace('@', '')
     try {
         let user;
         if (isUsername) {
@@ -249,39 +249,43 @@ router.post('/getUserDetails', auth, async (req, res) => {
         } else {
             user = await User.findById(userId);
         }
-        const { name, username, profilePicture, friends, bio, headerImage, pages, _id } = user;
-        var userDetails = { name, username, profilePicture, friends: friends.length, bio, headerImage, pages: pages.length, _id };
-        userId = _id;
-        const session = neodriver.session();
-        try {
-            const neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)-[:FOLLOWS]-(u2))`);
-            userDetails.isFollowing = neo_res.records[0]._fields[0];
-            if (!userDetails.isFollowing) {
-                try {
-                    const neo_res2 = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)<-[:HAS_REQUESTED_FOLLOW]-(u2))`);
-                    userDetails.hasRequestedFollow = neo_res2.records[0]._fields[0];
-                } catch (err) {
-                    console.log(e);
-                    await session.close()
-                    return res.status(500).json({
-                        errors: [{ msg: 'Unable to fetch user following details' }]
-                    });
+        if (user) {
+            const { name, username, profilePicture, friends, bio, headerImage, pages, _id } = user;
+            var userDetails = { name, username, profilePicture, friends: friends.length, bio, headerImage, pages: pages.length, _id };
+            userId = _id;
+            const session = neodriver.session();
+            try {
+                const neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)-[:FOLLOWS]-(u2))`);
+                userDetails.isFollowing = neo_res.records[0]._fields[0];
+                if (!userDetails.isFollowing) {
+                    try {
+                        const neo_res2 = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)<-[:HAS_REQUESTED_FOLLOW]-(u2))`);
+                        userDetails.hasRequestedFollow = neo_res2.records[0]._fields[0];
+                    } catch (err) {
+                        console.log(e);
+                        await session.close()
+                        return res.status(500).json({
+                            errors: [{ msg: 'Unable to fetch user following details' }]
+                        });
+                    }
                 }
+                let mutuals = [];
+                const neo_mutuals = await session.run(`Match(:User{id : "${req.id}"})-[:FOLLOWS]-(u:User)-[:FOLLOWS]-(:User{id : "${userId}"}) return u.id, u.name, u.profilePicture`);
+                neo_mutuals.records.map((mutual) => mutuals.push(mutual._fields));
+                userDetails.mutuals = mutuals;
+            } catch (e) {
+                console.log(e);
+                await session.close()
+                return res.status(500).json({
+                    errors: [{ msg: 'Unable to fetch user following details' }]
+                });
+            } then = async () => {
+                await session.close()
             }
-            let mutuals = [];
-            const neo_mutuals = await session.run(`Match(:User{id : "${req.id}"})-[:FOLLOWS]-(u:User)-[:FOLLOWS]-(:User{id : "${userId}"}) return u.id, u.name, u.profilePicture`);
-            neo_mutuals.records.map((mutual) => mutuals.push(mutual._fields));
-            userDetails.mutuals = mutuals;
-        } catch (e) {
-            console.log(e);
-            await session.close()
-            return res.status(500).json({
-                errors: [{ msg: 'Unable to fetch user following details' }]
-            });
-        } then = async () => {
-            await session.close()
+            res.status(200).send(userDetails);
+        } else {
+            throw "User not found";
         }
-        res.status(200).send(userDetails);
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");

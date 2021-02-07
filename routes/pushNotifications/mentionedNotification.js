@@ -20,13 +20,15 @@ const sendCommentMentionNotification = async ({ mentionedUsernames, commentText,
     };
     mentionedUsernames.map(async (user) => {
         const selectedUser = await User.findOne({ username: user }).select('notificationTokens');
-        admin.messaging().sendToDevice(selectedUser.notificationTokens, payload, options)
-            .then(response => {
-                // console.log("NotifSuccessfully sent");
-            })
-            .catch(error => {
-                console.log(error);
-            });
+        if (selectedUser) {
+            admin.messaging().sendToDevice(selectedUser.notificationTokens, payload, options)
+                .then(response => {
+                    // console.log("NotifSuccessfully sent");
+                })
+                .catch(error => {
+                    console.log(error);
+                });
+        }
     });
 }
 
