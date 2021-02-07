@@ -422,6 +422,62 @@ router.post('/createPageMoviePost', auth, async (req, res) => {
     }
 });
 
+//@route   POST /api/posts/createResharedPost
+//@desc    Reshare a post
+//access   Private
+
+router.post('/createResharedPost', auth, async (req, res) => {
+    const { caption, validity, selectedGroups, disableComments, resharedPostId } = req.body;
+    var expiryDate = new Date();
+    if (validity == 0) {
+        expiryDate.setHours(expiryDate.getHours() + 1);
+    }
+    if (validity == 1) {
+        expiryDate.setDate(expiryDate.getDate() + 1);
+    }
+    if (validity == 2) {
+        expiryDate.setDate(expiryDate.getDate() + 7);
+    }
+    if (validity == 3) {
+        expiryDate.setFullYear(expiryDate.getFullYear() + 99);
+    }
+    expiryDate = expiryDate.toISOString();
+    try {
+        const post = new Post({
+            caption,
+            expiryDate,
+            isReshare: true,
+            disableComments,
+            selectedGroups,
+            creator: req.id,
+            resharedPostId,
+        });
+        await post.save();
+        await User.findOneAndUpdate({ _id: post._id }, { $push: { posts: [post._id] } });
+        const session = neodriver.session();
+        try {
+            await session.run(`CREATE (p:Post {id : "${post._id}", expiryDate : "${expiryDate}", publishDate:"${new Date().toISOString()}", type : "reshare"}) return p`);
+            await session.run(`MATCH (u:User{id : "${req.id}"}),(p:Post {id : "${post._id}"}) CREATE (u)-[:HAS_POST]->(p) return u.name`);
+            selectedGroups.map(async (groupId) => {
+                const localsession = neodriver.session();
+                await localsession.run(`MATCH (g:Group{id : "${groupId}"}),(p:Post {id : "${post._id}"}) CREATE (g)-[:CONTAINS]->(p) return g.id`);
+                await localsession.run(`MATCH (u:User)-[:MEMBER_OF]->(g:Group{id: "${groupId}"})-[:CONTAINS]->(p:Post{id:"${post._id}"}) MERGE (u)-[:IN_FEED]->(p) return u.name`);
+                await localsession.close()
+            });
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to create post");
+        } then = async () => {
+            await session.close()
+        }
+        return res.status(200).send("Done");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 //@route   POST /api/posts/getPostDetails
 //@desc    Get post details
 //access   Private
@@ -447,8 +503,8 @@ router.post('/getPostDetails', auth, async (req, res) => {
         }
         const post = await Post.findById(postId).populate({ path: 'creator page', 'select': 'name profilePicture username' });
         if (post) {
-            const { isText, image, disableComments, caption, publishTime, likes, creator, comments, isMovie, isSong, songDetails, imdbId, isPagePost, page } = post;
-            var responsePost = { isText, image, disableComments, caption, publishTime, creator, isSong, songDetails, isMovie, isPagePost, page };
+            const { isText, image, disableComments, caption, publishTime, likes, creator, comments, isMovie, isSong, songDetails, imdbId, isPagePost, page, resharedPostId, isReshare } = post;
+            var responsePost = { isText, image, disableComments, caption, publishTime, creator, isSong, songDetails, isMovie, isPagePost, page, resharedPostId, isReshare };
             if (creator._id.toString() === req.id.toString()) {
                 responsePost.isCreator = true;
             } else {

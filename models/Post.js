@@ -51,6 +51,13 @@ const PostModel = new Schema({
     imdbId: {
         type: String,
     },
+    isReshare: {
+        type: Boolean,
+    },
+    resharedPostId : {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Post',
+    }, 
     publishTime: {
         type: Date,
         required: true,
