@@ -15,12 +15,12 @@ const ReportModel = new Schema({
     token: {
         type: String
     },
-    post: {
+    reportedPost: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post',
     },
     reasons: [{ type: String, }],
-    
+
 });
 
 module.exports = Report = mongoose.model('Report', ReportModel);
