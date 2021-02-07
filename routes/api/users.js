@@ -241,7 +241,9 @@ router.post('/updateBio', auth, async (req, res) => {
 
 router.post('/getUserDetails', auth, async (req, res) => {
     let { userId, userUsername, isUsername } = req.body;
-    userUsername = userUsername.replace('@', '')
+    if (isUsername) {
+        userUsername = userUsername.replace('@', '');
+    }
     try {
         let user;
         if (isUsername) {
