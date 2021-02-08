@@ -124,14 +124,18 @@ router.post('/updateGroup', auth, async (req, res) => {
             neo_res.records.map((member) => existingMembers.push(member._fields[0]));
             var membersToRemove = existingMembers.filter((member) => !groupMembers.includes(member));
             membersToRemove.map(async (member) => {
-                await session.run(`MATCH (u:User{id : "${member}"})-[mo:MEMBER_OF]-(g:Group{id : "${groupId}"}) DELETE mo`);
-                await session.run(`MATCH (u:User{id : "${member}"})-[if:IN_FEED]-(p:Post)-[c:CONTAINS]-(g:Group{id : "${groupId}"}) DELETE if`);
+                const localsession = neodriver.session();
+                await localsession.run(`MATCH (u:User{id : "${member}"})-[mo:MEMBER_OF]-(g:Group{id : "${groupId}"}) DELETE mo`);
+                await localsession.run(`MATCH (u:User{id : "${member}"})-[if:IN_FEED]-(p:Post)-[c:CONTAINS]-(g:Group{id : "${groupId}"}) DELETE if`); 
+                await localsession.close()
             });
             var membersToAdd = groupMembers.filter((member) => !existingMembers.includes(member));
             membersToAdd.push(req.id);
             membersToAdd.map(async (member) => {
-                await session.run(`MATCH (u:User{id : "${member}"}), (g:Group{id : "${groupId}"}) MERGE(u)-[:MEMBER_OF]->(g)`);
-                await session.run(`MATCH (u:User{id : "${member}"}),(p:Post)-[c:CONTAINS]-(g:Group{id : "${groupId}"}) MERGE (u)-[:IN_FEED]->(p)`);
+                const localsession = neodriver.session();
+                await localsession.run(`MATCH (u:User{id : "${member}"}), (g:Group{id : "${groupId}"}) MERGE(u)-[:MEMBER_OF]->(g)`);
+                await localsession.run(`MATCH (u:User{id : "${member}"}),(p:Post)-[c:CONTAINS]-(g:Group{id : "${groupId}"}) MERGE (u)-[:IN_FEED]->(p)`);
+                await localsession.close()
             });
             res.status(200).send("Done");
         } catch (e) {
@@ -152,7 +156,7 @@ router.post('/updateGroup', auth, async (req, res) => {
 //access   Private
 
 router.post('/deleteGroup', auth, async (req, res) => {
-    const { groupId} = req.body;
+    const { groupId } = req.body;
     console.log(groupId);
     try {
         var ObjectId = require('mongoose').Types.ObjectId;
