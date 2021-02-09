@@ -245,7 +245,13 @@ router.post('/getUserDetails', auth, async (req, res) => {
             userId = _id;
             const session = neodriver.session();
             try {
-                const neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)-[:FOLLOWS]-(u2))`);
+                let neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${req.id}" AND u2.id = "${userId}" RETURN EXISTS((u2)-[:HAS_BLOCKED]->(u1))`);
+                if (neo_res.records[0]._fields[0]) {
+                    return res.status(403).send("Banned");
+                }
+                neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${req.id}" AND u2.id = "${userId}" RETURN EXISTS((u1)-[:HAS_BLOCKED]->(u2))`);
+                userDetails.isBlocked = neo_res.records[0]._fields[0];
+                neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)-[:FOLLOWS]-(u2))`);
                 userDetails.isFollowing = neo_res.records[0]._fields[0];
                 if (!userDetails.isFollowing) {
                     try {
@@ -711,6 +717,85 @@ router.post('/resetPassword',
             const hashedpass = await bcrypt.hash(password, salt);
             console.log(user, password, hashedpass);
             await User.findByIdAndUpdate(user._id, { password: hashedpass });
+            res.status(200).send();
+        } catch (err) {
+            console.log(err.message);
+            return res.status(500).json({ errors: [{ msg: "Server Error" }] });
+        }
+    });
+
+//@route   /api/users/blockUser
+//@desc    Block a user
+//access   Public
+
+router.post('/blockUser', auth,
+    async (req, res) => {
+        const { userId } = req.body;
+        try {
+            const session = neodriver.session();
+            try {
+                await session.run(`MATCH (u1)-[f:FOLLOWS]-(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" DELETE f`);
+                await session.run(`Match (u:User{id : "${req.id}"})-[:HAS_GROUP]-(g:Group)-[m:MEMBER_OF]-(u2:User{id : "${userId}"})  DELETE m`);
+                await session.run(`Match (u:User{id : "${userId}"})-[:HAS_GROUP]-(g:Group)-[m:MEMBER_OF]-(u2:User{id : "${req.id}"})  DELETE m`);
+                await session.run(`Match (u:User{id : "${req.id}"})-[:HAS_POST]-(p:Post)-[i:IN_FEED]-(u2:User{id : "${userId}"})  DELETE i`);
+                await session.run(`Match (u:User{id : "${userId}"})-[:HAS_POST]-(p:Post)-[i:IN_FEED]-(u2:User{id : "${req.id}"})  DELETE i`);
+                await session.run(`Match (u:User{id : "${userId}"})-[:HAS_ROOM]-(r:Room)-[cer:CAN_ENTER_ROOM]-(u2:User{id : "${req.id}"})  DELETE cer`);
+                await session.run(`Match (u2:User{id : "${userId}"}),(u:User{id : "${req.id}"}) CREATE (u)-[:HAS_BLOCKED]->(u2) return u.id`);
+                console.log(`Match (u2:User{id : "${userId}"}),(u:User{id : "${req.id}"}) CREATE (u)-[:HAS_BLOCKED]->(u2) return u.id`);
+                // Now remove all the posts too 
+            } catch (e) {
+                console.log(e);
+                await session.close()
+                return res.status(500).json({
+                    errors: [{ msg: 'Unable to block' }]
+                });
+            } then = async () => {
+                await session.close()
+            }
+            await User.findByIdAndUpdate(req.id,
+                { $pullAll: { friends: [userId] } },
+                { new: true },
+                function (err, data) { }
+            );
+            await User.findByIdAndUpdate(userId,
+                { $pullAll: { friends: [req.id] } },
+                { new: true },
+                function (err, data) { }
+            );
+            res.status(200).send();
+        } catch (err) {
+            console.log(err.message);
+            return res.status(500).json({ errors: [{ msg: "Server Error" }] });
+        }
+    });
+
+router.post('/unblockUser', auth,
+    async (req, res) => {
+        const { userId } = req.body;
+        try {
+            const session = neodriver.session();
+            try {
+                await session.run(`MATCH (u1)-[hb:HAS_BLOCKED]-(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" DELETE hb`);
+                // Now remove all the posts too 
+            } catch (e) {
+                console.log(e);
+                await session.close()
+                return res.status(500).json({
+                    errors: [{ msg: 'Unable to unblock' }]
+                });
+            } then = async () => {
+                await session.close()
+            }
+            await User.findByIdAndUpdate(req.id,
+                { $pullAll: { friends: [userId] } },
+                { new: true },
+                function (err, data) { }
+            );
+            await User.findByIdAndUpdate(userId,
+                { $pullAll: { friends: [req.id] } },
+                { new: true },
+                function (err, data) { }
+            );
             res.status(200).send();
         } catch (err) {
             console.log(err.message);
