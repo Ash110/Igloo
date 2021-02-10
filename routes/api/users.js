@@ -830,9 +830,10 @@ router.post('/checkPro', auth, async (req, res) => {
     try {
         const user = await User.findById(req.id).select('isPro proExpiryDate');
         let { proExpiryDate, isPro } = user;
-        if (Date(proExpiryDate) < new Date()) {
+        if (proExpiryDate > new Date()) {
             return res.status(200).send({ isPro: true, proExpiryDate });
         } else {
+            await User.findByIdAndUpdate(req.id, { isPro: false });
             return res.status(200).send({ isPro: false, proExpiryDate });
         }
     } catch (err) {
