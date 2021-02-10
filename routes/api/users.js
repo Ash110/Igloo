@@ -726,7 +726,7 @@ router.post('/resetPassword',
 
 //@route   /api/users/blockUser
 //@desc    Block a user
-//access   Public
+//access   Private
 
 router.post('/blockUser', auth,
     async (req, res) => {
@@ -769,6 +769,10 @@ router.post('/blockUser', auth,
         }
     });
 
+
+//@route   /api/users/unblockUser
+//@desc    Unblock a user
+//access   Private
 router.post('/unblockUser', auth,
     async (req, res) => {
         const { userId } = req.body;
@@ -802,5 +806,39 @@ router.post('/unblockUser', auth,
             return res.status(500).json({ errors: [{ msg: "Server Error" }] });
         }
     });
+
+//@route   /api/users/updateProStatus
+//@desc    Update Pro Status of user
+//access   Private
+
+router.post('/updateProStatus', auth, async (req, res) => {
+    const { isPro, expiryDate } = req.body;
+    try {
+        await User.findByIdAndUpdate(req.id, { isPro, proExpiryDate: Date.parse(expiryDate) });
+        return res.status(200).send();
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/users/checkPro
+//@desc    Check Pro Status of user
+//access   Private
+
+router.post('/checkPro', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.id).select('isPro proExpiryDate');
+        let { proExpiryDate, isPro } = user;
+        if (Date(proExpiryDate) < new Date()) {
+            return res.status(200).send({ isPro: true, proExpiryDate });
+        } else {
+            return res.status(200).send({ isPro: false, proExpiryDate });
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
 
 module.exports = router;

@@ -107,7 +107,13 @@ const UserModel = new Schema({
     },
     resetcode: {
         type: String,
-    }
+    },
+    isPro: {
+        type: Boolean,
+    },
+    proExpiryDate: {
+        type: Date,
+    },
 });
 
 module.exports = User = mongoose.model('User', UserModel);
