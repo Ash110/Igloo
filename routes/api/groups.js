@@ -34,9 +34,16 @@ router.post('/getGroups', auth, async (req, res) => {
 
 router.post('/createGroup', auth, async (req, res) => {
     const { groupName, groupDescription } = req.body;
+    if(groupName.toString().trim()===""){
+        return res.status(403).send("Enter group name");
+    }
+    const user = await User.findById(req.id).select('groups isPro');
+    if (!user.isPro && user.groups.length >= 5) {
+        return res.status(403).send("You can only create 5 groups under the Free Plan. Upgrade to Pro to create unlimited Groups!",);
+    }
     try {
         let group = new Group({
-            name: groupName,
+            name: groupName.toString(),
             description: groupDescription ? groupDescription : "",
             creator: req.id,
         });

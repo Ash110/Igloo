@@ -38,6 +38,10 @@ router.post('/createPage', auth, async (req, res) => {
         if (!(name.trim()) || !(description.trim()) || category === "Choose a topic") {
             return res.status(403).send("One or more fields are incomplete");
         }
+        const user = await User.findById(req.id).select('pages isPro');
+        if (!user.isPro && user.pages.length >= 1) {
+            return res.status(403).send("You can only create 1 page under the Free Plan. Upgrade to Pro to create unlimited Pages!",);
+        }
         let page = new Page({
             name,
             description,
