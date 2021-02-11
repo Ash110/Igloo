@@ -121,6 +121,12 @@ router.post('/unsubscribePage', auth, async (req, res) => {
         } then = async () => {
             await session.close()
         }
+        Page.findOneAndUpdate(
+            { _id: pageId },
+            { $pullAll: { subscribers: [req.id] } },
+            { new: true },
+            function (err, data) { }
+        );
         res.status(200).send("Done");
     } catch (err) {
         console.log(err);
@@ -147,7 +153,67 @@ router.post('/subscribePage', auth, async (req, res) => {
         } then = async () => {
             await session.close()
         }
+        await Page.findOneAndUpdate({ _id: pageId }, { $push: { subscribers: [req.id] } });
         res.status(200).send("Done");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/pages/getPageSettings
+//@desc    Get page settings
+//access   Private
+
+router.post('/getPageSettings', auth, async (req, res) => {
+    const { pageId } = req.body;
+    try {
+        const page = await Page.findById(pageId);
+        const { name, description, category, creator } = page;
+        var pageDetails = { name, description, category, creator, numberOfSubscribers: page.subscribers.length };
+        const session = neodriver.session();
+        try {
+            const neo_res = await session.run(`MATCH (u:User)-[st:SUBSCRIBED_TO]->(pg:Page) WHERE pg.id = "${pageId}" RETURN u.id,u.name, u.username, u.profilePicture LIMIT 30`);
+            subscribers = [];
+            neo_res.records.map((record) => subscribers.push(record._fields));
+            pageDetails.subscribers = subscribers;
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to fetch page details' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        res.status(200).send({ pageDetails });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/pages/savePageSettings
+//@desc    Save page settings
+//access   Private
+
+router.post('/savePageSettings', auth, async (req, res) => {
+    const { pageId, pageName, pageDescription } = req.body;
+    try {
+        await Page.findByIdAndUpdate(pageId, { name: pageName, description: pageDescription });
+        const session = neodriver.session();
+        try {
+            await session.run(`MATCH (pg:Page {id : "${pageId}"}) SET pg.name ="${pageName}", pg.description = "${pageDescription}" RETURN pg.id`);
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to update page details' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        res.status(200).send();
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
