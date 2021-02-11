@@ -114,6 +114,10 @@ const UserModel = new Schema({
     proExpiryDate: {
         type: Date,
     },
+    canCreateSpace: {
+        type: Boolean,
+        default: true
+    },
 });
 
 module.exports = User = mongoose.model('User', UserModel);

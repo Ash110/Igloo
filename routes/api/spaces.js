@@ -7,7 +7,13 @@ const Space = require('../../models/Space');
 const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
 const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
-const { removeBasicRoom, alertBasicRoomExpiry } = require('../../agenda/agendaFunctions');
+const {
+    removeBasicRoom,
+    alertBasicRoomExpiry,
+    removeProRoom,
+    alertProRoomExpiry,
+    removeRoomRestrictions
+} = require('../../agenda/agendaFunctions');
 const { sendRoomInvitationNotification } = require('../pushNotifications/roomInvitationNotification');
 
 const router = express.Router();
@@ -43,10 +49,13 @@ router.post('/getAllRooms', auth, async (req, res) => {
 
 router.post('/createDiscussionRoom', auth, async (req, res) => {
     const { name, description, selectedFriends, isGlobal, isTemplate } = req.body;
-    console.log(selectedFriends)
     try {
         if (!name) {
             return res.status(403).send("Room must need a name");
+        }
+        const user = await User.findById(req.id).select('isPro canCreateSpace');
+        if (user.canCreateSpace == false && !user.isPro) {
+            return res.status(403).send("You can only create one free room per day. You have already used up your free room for today. Upgrade to Pro to create unlimited rooms");
         }
         let uid = 0;
         let role = RtcRole.PUBLISHER;
@@ -96,8 +105,15 @@ router.post('/createDiscussionRoom', auth, async (req, res) => {
             console.log("Failed to reach chat server");
             console.log(err);
         }
-        removeBasicRoom(room._id);
-        alertBasicRoomExpiry(room._id);
+        if (user.isPro) {
+            removeProRoom(room._id);
+            alertProRoomExpiry(room._id);
+        } else {
+            removeBasicRoom(room._id);
+            alertBasicRoomExpiry(room._id);
+            await User.findByIdAndUpdate(req.id, { canCreateSpace: false });
+            removeRoomRestrictions(req.id);
+        }
         return res.status(200).send({
             roomId: room._id,
             roomToken: token,

@@ -13,7 +13,10 @@ const router = express.Router();
 //access   Private
 
 router.post('/getFeed', auth, async (req, res) => {
-    const { skip } = req.body;
+    let { skip } = req.body;
+    if (!skip) {
+        skip = 0;
+    }
     try {
         const session = neodriver.session();
         const b = new Date().toISOString();
