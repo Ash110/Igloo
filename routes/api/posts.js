@@ -298,8 +298,7 @@ router.post('/createPageSongPost', auth, async (req, res) => {
         try {
             await session.run(`CREATE (p:Post {id : "${post.id}", type : "song", expiryDate : "${expiryDate}", publishDate:"${new Date().toISOString()}" }) return p`);
             await session.run(`MATCH (pg:Page{id : "${selectedPage}"}),(p:Post {id : "${post.id}"}) CREATE (pg)-[:PAGE_HAS_POST]->(p) return pg.id`);
-            var x = await session.run(`MATCH (u:User)-[:SUBSCRIBED_TO]->(pg:Page{id: "${selectedPage}"})-[:PAGE_HAS_POST]->(p:Post{id:"${post.id}"}) MERGE (u)-[:IN_FEED]->(p) return u.id`);
-            console.log(x);
+            await session.run(`MATCH (u:User)-[:SUBSCRIBED_TO]->(pg:Page{id: "${selectedPage}"})-[:PAGE_HAS_POST]->(p:Post{id:"${post.id}"}) MERGE (u)-[:IN_FEED]->(p) return u.id`);
         } catch (e) {
             console.log(e);
             await session.close()

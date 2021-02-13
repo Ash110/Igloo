@@ -21,7 +21,7 @@ router.post('/getUserPosts', auth, async (req, res) => {
     if (isUser) {
         try {
             const session = neodriver.session();
-            const neo_res = await session.run(`MATCH (:User{id:"${userId}"}) -[:HAS_POST]->(p:Post) RETURN p.id`);
+            const neo_res = await session.run(`MATCH (:User{id:"${userId}"}) -[:HAS_POST]->(p:Post) RETURN p.id ORDER BY p.publishDate DESC`);
             posts = [];
             neo_res.records.map((record) => posts.push(record._fields[0]));
             return res.status(200).send({ posts, skip: posts.length, end: posts.length === 0 });
@@ -33,7 +33,7 @@ router.post('/getUserPosts', auth, async (req, res) => {
         try {
             const session = neodriver.session();
             const b = new Date().toISOString();
-            const neo_res = await session.run(`MATCH (:User{id:"${userId}"}) -[:HAS_POST]->(p:Post)<-[:IN_FEED]-(:User{id:"${req.id}"}) WHERE p.expiryDate > "${b}" RETURN p.id`);
+            const neo_res = await session.run(`MATCH (:User{id:"${userId}"})-[:HAS_POST]->(p:Post)<-[:IN_FEED]-(:User{id:"${req.id}"}) WHERE p.expiryDate > "${b}" RETURN p.id ORDER BY p.publishDate DESC`);
             posts = [];
             neo_res.records.map((record) => posts.push(record._fields[0]));
             return res.status(200).send({ posts, skip: posts.length, end: posts.length === 0 });
