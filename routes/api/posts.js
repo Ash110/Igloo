@@ -487,6 +487,7 @@ router.post('/getPostDetails', auth, async (req, res) => {
         if (!isPagePost) {
             const checkSession = neodriver.session();
             try {
+                // console.log(`return EXISTS((:User{ id : "${req.id}" })-[:IN_FEED]->(:Post{id : "${postId}"}))`);
                 const neo_res_check = await checkSession.run(`return EXISTS((:User{ id : "${req.id}" })-[:IN_FEED]->(:Post{id : "${postId}"}))`);
                 const canView = neo_res_check.records[0]._fields[0];
                 if (!canView) {
@@ -502,8 +503,8 @@ router.post('/getPostDetails', auth, async (req, res) => {
         }
         const post = await Post.findById(postId).populate({ path: 'creator page', 'select': 'name profilePicture username' });
         if (post) {
-            const { isText, image, disableComments, caption, publishTime, likes, creator, comments, isMovie, isSong, songDetails, imdbId, isPagePost, page, resharedPostId, isReshare } = post;
-            var responsePost = { isText, image, disableComments, caption, publishTime, creator, isSong, songDetails, isMovie, isPagePost, page, resharedPostId, isReshare };
+            const { isText, image, disableComments, caption, publishTime, likes, creator, comments, isMovie, isSong, songDetails, imdbId, isPagePost, page, resharedPostId, isReshare, _id } = post;
+            var responsePost = { isText, image, disableComments, caption, publishTime, creator, isSong, songDetails, isMovie, isPagePost, page, resharedPostId, isReshare, _id };
             if (creator._id.toString() === req.id.toString()) {
                 responsePost.isCreator = true;
             } else {

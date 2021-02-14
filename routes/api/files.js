@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
 const express = require('express');
 const User = require('../../models/User');
@@ -6,6 +7,7 @@ const Group = require('../../models/Group');
 const Post = require('../../models/Post');
 const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
+const exifremove = require('exifremove');
 
 const router = express.Router();
 
@@ -45,7 +47,9 @@ router.post('/uploadProfilePicture', auth, (req, res) => {
             } then = async () => {
                 await session.close()
             }
-            return res.status(200).send(imageName);
+            res.status(200).send(imageName);
+            const uploadedImage = fs.readFileSync(`./images/posts/${imageName}`);
+            exifremove.remove(uploadedImage);
         }
     });
 });
@@ -75,7 +79,7 @@ router.post('/uploadHeaderImage', auth, (req, res) => {
         } else {
             console.log(req.file);
             console.log(`Match (u:User {id : "${req.id}"}) SET u.headerImage = "${imageName}"`);
-            await User.findOneAndUpdate({ _id: req.id}, {headerImage: imageName });
+            await User.findOneAndUpdate({ _id: req.id }, { headerImage: imageName });
             const session = neodriver.session();
             try {
                 await session.run(`Match (u:User {id : "${req.id}"}) SET u.headerImage = "${imageName}"`);
@@ -86,7 +90,9 @@ router.post('/uploadHeaderImage', auth, (req, res) => {
             } then = async () => {
                 await session.close()
             }
-            return res.status(200).send(imageName);
+            res.status(200).send(imageName);
+            const uploadedImage = fs.readFileSync(`./images/posts/${imageName}`);
+            exifremove.remove(uploadedImage);
         }
     });
 });
@@ -115,14 +121,20 @@ router.post('/uploadImagePost', auth, (req, res) => {
             console.log(err);
             return res.status(500).send("Server Error");
         } else {
-            console.log(req.file);
-            const post = new Post({
-                creator: req.id,
-                isText: false,
-                image: imageName,
-            });
-            await post.save();
-            return res.status(200).send({ imageName, postId: post._id });
+            try {
+                console.log(req.file);
+                const post = new Post({
+                    creator: req.id,
+                    isText: false,
+                    image: imageName,
+                });
+                await post.save();
+                res.status(200).send({ imageName, postId: post._id });
+                const uploadedImage = fs.readFileSync(`./images/posts/${imageName}`);
+                exifremove.remove(uploadedImage);
+            } catch (err) {
+                console.log(err);
+            }
         }
     });
 });
@@ -159,7 +171,9 @@ router.post('/uploadPageImagePost', auth, (req, res) => {
                 isPagePost: true,
             });
             await post.save();
-            return res.status(200).send({ imageName, postId: post._id });
+            res.status(200).send({ imageName, postId: post._id });
+            const uploadedImage = fs.readFileSync(`./images/posts/${imageName}`);
+            exifremove.remove(uploadedImage);
         }
     });
 });
