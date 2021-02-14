@@ -48,7 +48,7 @@ router.post('/uploadProfilePicture', auth, (req, res) => {
                 await session.close()
             }
             res.status(200).send(imageName);
-            const uploadedImage = fs.readFileSync(`./images/posts/${imageName}`);
+            const uploadedImage = fs.readFileSync(`./images/profilepictures/${imageName}`);
             exifremove.remove(uploadedImage);
         }
     });
@@ -91,7 +91,7 @@ router.post('/uploadHeaderImage', auth, (req, res) => {
                 await session.close()
             }
             res.status(200).send(imageName);
-            const uploadedImage = fs.readFileSync(`./images/posts/${imageName}`);
+            const uploadedImage = fs.readFileSync(`./images/headerimages/${imageName}`);
             exifremove.remove(uploadedImage);
         }
     });
@@ -172,7 +172,7 @@ router.post('/uploadPageImagePost', auth, (req, res) => {
             });
             await post.save();
             res.status(200).send({ imageName, postId: post._id });
-            const uploadedImage = fs.readFileSync(`./images/posts/${imageName}`);
+            const uploadedImage = fs.readFileSync(`./images/pageposts/${imageName}`);
             exifremove.remove(uploadedImage);
         }
     });
