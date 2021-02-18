@@ -240,8 +240,8 @@ router.post('/getUserDetails', auth, async (req, res) => {
             user = await User.findById(userId);
         }
         if (user) {
-            const { name, username, profilePicture, friends, bio, headerImage, pages, _id } = user;
-            var userDetails = { name, username, profilePicture, friends: friends.length, bio, headerImage, pages: pages.length, _id };
+            const { name, username, profilePicture, followers, bio, headerImage, pages, _id } = user;
+            var userDetails = { name, username, profilePicture, followers: followers.length || 0, bio, headerImage, pages: pages.length, _id };
             userId = _id;
             const session = neodriver.session();
             try {
@@ -251,11 +251,11 @@ router.post('/getUserDetails', auth, async (req, res) => {
                 }
                 neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${req.id}" AND u2.id = "${userId}" RETURN EXISTS((u1)-[:HAS_BLOCKED]->(u2))`);
                 userDetails.isBlocked = neo_res.records[0]._fields[0];
-                neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)-[:FOLLOWS]-(u2))`);
+                neo_res = await session.run(`MATCH (other),(you) WHERE other.id = "${userId}" AND you.id = "${req.id}" RETURN EXISTS((you)-[:FOLLOWS]->(other))`);
                 userDetails.isFollowing = neo_res.records[0]._fields[0];
                 if (!userDetails.isFollowing) {
                     try {
-                        const neo_res2 = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" RETURN EXISTS((u1)<-[:HAS_REQUESTED_FOLLOW]-(u2))`);
+                        const neo_res2 = await session.run(`MATCH (other),(you) WHERE other.id = "${userId}" AND you.id = "${req.id}" RETURN EXISTS((you)-[:HAS_REQUESTED_FOLLOW]->(other))`);
                         userDetails.hasRequestedFollow = neo_res2.records[0]._fields[0];
                     } catch (err) {
                         console.log(e);
@@ -384,13 +384,10 @@ router.post('/acceptFollowRequest', auth, async (req, res) => {
     try {
         const session = neodriver.session();
         try {
-            await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" CREATE (u1)-[:FOLLOWS]->(u2) return u1.name`);
-            console.log("Followed");
-            await session.run(`Match (u2:User{id : "${userId}"}),(u:User{id : "${req.id}"}),(g:Group{name:'All Followers'}) WHERE (u)-[:HAS_GROUP]->(g) CREATE (u2)-[:MEMBER_OF]->(g) return u`);
-            await session.run(`Match (u2:User{id : "${userId}"}),(u:User{id : "${req.id}"}),(g:Group{name:'All Followers'}) WHERE (u2)-[:HAS_GROUP]->(g) CREATE (u)-[:MEMBER_OF]->(g) return u`);
-            await session.run(`Match (u2:User{id : "${userId}"}),(u:User{id : "${req.id}"}),(g:Group{name:'All Followers'}),(p:Post) WHERE ((u)-[:HAS_GROUP]->(g)-[:CONTAINS]-(p)) CREATE (u2)-[:IN_FEED]->(p) return u`);
-            await session.run(`Match (u2:User{id : "${userId}"}),(u:User{id : "${req.id}"}),(g:Group{name:'All Followers'}),(p:Post) WHERE ((u2)-[:HAS_GROUP]->(g)-[:CONTAINS]-(p)) CREATE (u)-[:IN_FEED]->(p) return u`);
-            await session.run(`MATCH (u1{id : "${userId}"})-[hrf:HAS_REQUESTED_FOLLOW]-(u2{id:"${req.id}"}) DELETE hrf`);
+            await session.run(`MATCH (follower),(you) WHERE follower.id = "${userId}" AND you.id = "${req.id}" CREATE (follower)-[:FOLLOWS]->(you) return you.name`);
+            await session.run(`Match (follower:User{id : "${userId}"}),(you:User{id : "${req.id}"}),(g:Group{name:'All Followers'}) WHERE (you)-[:HAS_GROUP]->(g) CREATE (follower)-[:MEMBER_OF]->(g) return you.id`);
+            await session.run(`Match (follower:User{id : "${userId}"}),(you:User{id : "${req.id}"}),(g:Group{name:'All Followers'}),(p:Post) WHERE ((you)-[:HAS_GROUP]->(g)-[:CONTAINS]-(p)) CREATE (follower)-[:IN_FEED]->(p) return you.id`);
+            await session.run(`MATCH (follower:User{id : "${userId}"})-[hrf:HAS_REQUESTED_FOLLOW]-(you:User{id:"${req.id}"}) DELETE hrf`);
         } catch (e) {
             console.log(e);
             await session.close()
@@ -400,14 +397,31 @@ router.post('/acceptFollowRequest', auth, async (req, res) => {
         } then = async () => {
             await session.close()
         }
-        await User.findOneAndUpdate({ _id: req.id }, { $push: { friends: [userId] } });
-        await User.findOneAndUpdate({ _id: userId }, { $push: { friends: [req.id] } });
+        await User.findOneAndUpdate({ _id: req.id }, { $push: { followers: [userId] } });
+        await User.findOneAndUpdate({ _id: userId }, { $push: { following: [req.id] } });
         const user = await User.findById(userId).select('notificationTokens');
         if (user.notificationTokens && user.notificationTokens.length > 0) {
             const sender = await User.findById(req.id).select('name');
             userPageNotification(user.notificationTokens, `${sender.name} has accepted your follow request`, "", "user", req.id);
         }
-        res.status(200).send("Followed");
+        const notification = new Notification({
+            trigger: 'followingAccepted',
+            sender: req.id,
+        });
+        await notification.save();
+        await User.findOneAndUpdate({ _id: userId }, {
+            $push: {
+                notifications: {
+                    $each: [notification._id],
+                    $position: 0
+                }
+            }
+        });
+        await User.findByIdAndUpdate(userId, {
+            newNotifications: true,
+        });
+        await User.findByIdAndUpdate(userId, { $inc: { numberOfNewNotifications: 1 } });
+        res.status(200).send("done");
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
@@ -423,7 +437,7 @@ router.post('/rejectFollowRequest', auth, async (req, res) => {
     try {
         const session = neodriver.session();
         try {
-            await session.run(`MATCH (u1{id : "${userId}"})-[hrf:HAS_REQUESTED_FOLLOW]-(u2{id:"${req.id}"}) DELETE hrf`);
+            await session.run(`MATCH (u1:User{id : "${userId}"})-[hrf:HAS_REQUESTED_FOLLOW]-(u2:User{id:"${req.id}"}) DELETE hrf`);
         } catch (e) {
             console.log(e);
             await session.close()
@@ -449,12 +463,10 @@ router.post('/unfollowUser', auth, async (req, res) => {
     try {
         const session = neodriver.session();
         try {
-            await session.run(`MATCH (u1)-[f:FOLLOWS]-(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" DELETE f`);
-            await session.run(`Match (u:User{id : "${req.id}"})-[:HAS_GROUP]-(g:Group)-[m:MEMBER_OF]-(u2:User{id : "${userId}"})  DELETE m`);
-            await session.run(`Match (u:User{id : "${userId}"})-[:HAS_GROUP]-(g:Group)-[m:MEMBER_OF]-(u2:User{id : "${req.id}"})  DELETE m`);
-            await session.run(`Match (u:User{id : "${req.id}"})-[:HAS_POST]-(p:Post)-[i:IN_FEED]-(u2:User{id : "${userId}"})  DELETE i`);
-            await session.run(`Match (u:User{id : "${userId}"})-[:HAS_POST]-(p:Post)-[i:IN_FEED]-(u2:User{id : "${req.id}"})  DELETE i`);
-            await session.run(`Match (u:User{id : "${userId}"})-[:HAS_ROOM]-(r:Room)-[cer:CAN_ENTER_ROOM]-(u2:User{id : "${req.id}"})  DELETE cer`);
+            await session.run(`MATCH (you)-[f:FOLLOWS]-(following) WHERE following.id = "${userId}" AND you.id = "${req.id}" DELETE f`);
+            await session.run(`Match (you:User{id : "${req.id}"})-[m:MEMBER_OF]->(g:Group)<-[:HAS_GROUP]-(following:User{id : "${userId}"})  DELETE m`);
+            await session.run(`Match (following:User{id : "${userId}"})-[:HAS_POST]->(p:Post)<-[i:IN_FEED]-(you:User{id : "${req.id}"})  DELETE i`);
+            await session.run(`Match (following:User{id : "${userId}"})-[:HAS_ROOM]->(r:Room)<-[cer:CAN_ENTER_ROOM]-(you:User{id : "${req.id}"})  DELETE cer`);
             // Now remove all the posts too 
         } catch (e) {
             console.log(e);
@@ -466,12 +478,12 @@ router.post('/unfollowUser', auth, async (req, res) => {
             await session.close()
         }
         await User.findByIdAndUpdate(req.id,
-            { $pullAll: { friends: [userId] } },
+            { $pullAll: { following: [userId] } },
             { new: true },
             function (err, data) { }
         );
         await User.findByIdAndUpdate(userId,
-            { $pullAll: { friends: [req.id] } },
+            { $pullAll: { followers: [req.id] } },
             { new: true },
             function (err, data) { }
         );

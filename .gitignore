@@ -7,3 +7,5 @@ config/default.json
 config/igloosocial-firebase-adminsdk-b0e4c-555a9eaf53.json
 
 .DS_Store
+
+updateServerImages.js

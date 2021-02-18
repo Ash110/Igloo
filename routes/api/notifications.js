@@ -17,9 +17,11 @@ router.post('/getPendingFollowRequests', auth, async (req, res) => {
     try {
         const session = neodriver.session();
         try {
-            const neo_res = await session.run(`Match (u:User) -[:HAS_REQUESTED_FOLLOW]->(:User{id:"${req.id}"}) return u.id, u.username, u.name, u.profilePicture`);
+            const neo_res = await session.run(`Match (u:User) -[:HAS_REQUESTED_FOLLOW]->(you:User{id:"${req.id}"}) return u.id, u.username, u.name, u.profilePicture, (EXISTS ((you)-[:FOLLOWS]->(you)))`);
             requests = [];
-            neo_res.records.map((record) => requests.push(record._fields));
+            for (record of neo_res.records) {
+                requests.push([...record._fields, false]);
+            }
             await session.close()
             return res.status(200).send(requests);
         } catch (e) {

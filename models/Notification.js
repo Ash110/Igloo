@@ -23,6 +23,10 @@ const NotificationModel = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Post',
     },
+    triggerUser: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    },
     commentText : {
         type : String,
     },
