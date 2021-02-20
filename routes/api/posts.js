@@ -573,7 +573,8 @@ router.post('/likePost', auth, async (req, res) => {
         if (post) {
             const session = neodriver.session();
             try {
-                await session.run(`MATCH (u:User{ id : "${req.id}" }), (p:Post{id : "${postId}"}) CREATE (u)-[:LIKES]->(p)`);
+                var x = await session.run(`MATCH (u:User{ id : "${req.id}" }), (p:Post{id : "${postId}"}) CREATE (u)-[:LIKES]->(p)`);
+                console.log(x);
             } catch (e) {
                 console.log(e);
                 await session.close()
