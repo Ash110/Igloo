@@ -122,6 +122,10 @@ const UserModel = new Schema({
         type: Boolean,
         default: true
     },
+    isPublicProfile: {
+        type: Boolean,
+        default: false,
+    }
 });
 
 module.exports = User = mongoose.model('User', UserModel);

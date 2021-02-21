@@ -854,4 +854,19 @@ router.post('/checkPro', auth, async (req, res) => {
     }
 });
 
+//@route   /api/users/getPrivacySettings
+//@desc    Get user's privacy settings
+//access   Private
+
+router.post('/getPrivacySettings', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.id).select('isPublicProfile');
+        let { isPublicProfile } = user;
+        return res.status(200).send({ privacySettings: { isPublicProfile } })
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 module.exports = router;
