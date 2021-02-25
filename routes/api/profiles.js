@@ -13,7 +13,7 @@ const router = express.Router();
 //access   Private
 
 router.post('/getUserPosts', auth, async (req, res) => {
-    var { userId, isUser, skip } = req.body;
+    var { userId, isUser, skip, isPublicProfile } = req.body;
     if (!userId) {
         userId = req.id;
     }
@@ -26,7 +26,6 @@ router.post('/getUserPosts', auth, async (req, res) => {
             const neo_res = await session.run(`MATCH (:User{id:"${userId}"}) -[:HAS_POST]->(p:Post) RETURN p.id,EXISTS((:User{id:"${req.id}"})-[:LIKES]->(p:Post)) ORDER BY p.publishDate DESC SKIP ${skip} LIMIT 30`);
             posts = [];
             for (const record of neo_res.records) {
-                console.log(record._fields[0]);
                 try {
                     const post = await Post.findById(record._fields[0]).populate({ path: 'creator page', 'select': 'name profilePicture username' });
                     const { isText, image, disableComments, caption, publishTime, likes, creator, comments, isMovie, isSong, songDetails, imdbId, isPagePost, page, resharedPostId, isReshare, _id } = post;
@@ -80,7 +79,12 @@ router.post('/getUserPosts', auth, async (req, res) => {
         try {
             const session = neodriver.session();
             const b = new Date().toISOString();
-            const neo_res = await session.run(`MATCH (:User{id:"${userId}"})-[:HAS_POST]->(p:Post)<-[:IN_FEED]-(:User{id:"${req.id}"}) WHERE p.expiryDate > "${b}" RETURN p.id,EXISTS((:User{id:"${req.id}"})-[:LIKES]->(p:Post)) ORDER BY p.publishDate DESC SKIP ${skip} LIMIT 30`);
+            let neo_res;
+            if (isPublicProfile) {
+                neo_res = await session.run(`MATCH (:User{id:"${userId}"})-[:HAS_POST]->(p:Post)<-[:CONTAINS]-(:Group{name:"All Followers"}) WHERE p.expiryDate > "${b}" RETURN p.id,EXISTS((:User{id:"${req.id}"})-[:LIKES]->(p:Post)) ORDER BY p.publishDate DESC SKIP ${skip} LIMIT 30`);
+            } else {
+                neo_res = await session.run(`MATCH (:User{id:"${userId}"})-[:HAS_POST]->(p:Post)<-[:IN_FEED]-(:User{id:"${req.id}"}) WHERE p.expiryDate > "${b}" RETURN p.id,EXISTS((:User{id:"${req.id}"})-[:LIKES]->(p:Post)) ORDER BY p.publishDate DESC SKIP ${skip} LIMIT 30`);
+            }
             posts = [];
             for (const record of neo_res.records) {
                 try {

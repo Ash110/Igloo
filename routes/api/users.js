@@ -240,8 +240,8 @@ router.post('/getUserDetails', auth, async (req, res) => {
             user = await User.findById(userId);
         }
         if (user) {
-            const { name, username, profilePicture, followers, bio, headerImage, pages, _id } = user;
-            var userDetails = { name, username, profilePicture, followers: followers.length || 0, bio, headerImage, pages: pages.length, _id };
+            const { name, username, profilePicture, followers, bio, headerImage, pages, _id, isPublicProfile } = user;
+            var userDetails = { name, username, profilePicture, followers: followers.length || 0, bio, headerImage, pages: pages.length, _id, isPublicProfile };
             userId = _id;
             const session = neodriver.session();
             try {
@@ -842,12 +842,17 @@ router.post('/checkPro', auth, async (req, res) => {
     try {
         const user = await User.findById(req.id).select('isPro proExpiryDate');
         let { proExpiryDate, isPro } = user;
-        if (proExpiryDate > new Date()) {
-            return res.status(200).send({ isPro: true, proExpiryDate });
+        if (isPro) {
+            if (proExpiryDate > new Date()) {
+                return res.status(200).send({ isPro: true, proExpiryDate });
+            } else {
+                await User.findByIdAndUpdate(req.id, { isPro: false });
+                return res.status(200).send({ isPro: false, proExpiryDate });
+            }
         } else {
-            await User.findByIdAndUpdate(req.id, { isPro: false });
             return res.status(200).send({ isPro: false, proExpiryDate });
         }
+
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
@@ -862,7 +867,28 @@ router.post('/getPrivacySettings', auth, async (req, res) => {
     try {
         const user = await User.findById(req.id).select('isPublicProfile');
         let { isPublicProfile } = user;
+        console.log(isPublicProfile);
         return res.status(200).send({ privacySettings: { isPublicProfile } })
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/users/updatePublicStatus
+//@desc    Update user's public status
+//access   Private
+
+router.post('/updatePublicStatus', auth, async (req, res) => {
+    const { isPublicProfile } = req.body;
+    try {
+        const user = await User.findById(req.id).select('isPro');
+        if (isPublicProfile && !user.isPro) {
+            return res.status(403).send("You need to be a pro user to enable this");
+        }
+        console.log(isPublicProfile, req.body);
+        await User.findByIdAndUpdate(req.id, { isPublicProfile });
+        return res.status(200).send();
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
