@@ -22,20 +22,24 @@ router.post('/getFeed', auth, async (req, res) => {
         const b = new Date().toISOString();
         console.log(`MATCH (:User{id:"${req.id}"})-[:IN_FEED]->(p:Post) WHERE p.expiryDate > "${b}" RETURN p.id,EXISTS((:User{id:"${req.id}"})-[:LIKES]->(p:Post)) ORDER BY p.publishDate DESC SKIP ${skip} LIMIT 30`);
         const neo_res = await session.run(`MATCH (:User{id:"${req.id}"})-[:IN_FEED]->(p:Post) WHERE p.expiryDate > "${b}" RETURN p.id,EXISTS((:User{id:"${req.id}"})-[:LIKES]->(p:Post)) ORDER BY p.publishDate DESC SKIP ${skip} LIMIT 30`);
-        posts = [];
+        let ids = [];
         for (const record of neo_res.records) {
+            ids.push(record._fields[0]);
+        }
+        const records = await Post.find({ '_id': { $in: ids } }).populate({ path: 'creator page', 'select': 'name profilePicture username' });
+        let posts = [];
+        for (let i = 0; i < records.length; i++) {
             try {
-                const post = await Post.findById(record._fields[0]).populate({ path: 'creator page', 'select': 'name profilePicture username' });
-                const { isText, image, disableComments, caption, publishTime, likes, creator, comments, isMovie, isSong, songDetails, imdbId, isPagePost, page, resharedPostId, isReshare, _id } = post;
+                const { isText, image, disableComments, caption, publishTime, comments, likes, creator, isMovie, isSong, songDetails, imdbId, isPagePost, page, resharedPostId, isReshare, _id } = records[i];
                 var responsePost = { isText, image, disableComments, caption, publishTime, creator, isSong, songDetails, isMovie, isPagePost, page, resharedPostId, isReshare, _id };
                 if (creator._id.toString() === req.id.toString()) {
                     responsePost.isCreator = true;
                 } else {
                     responsePost.isCreator = false;
                 }
-                responsePost.comments = post.comments ? post.comments.length : 0;
+                responsePost.comments = comments ? comments.length : 0;
                 responsePost.likes = likes.length;
-                responsePost.hasLiked = record._fields[1];
+                responsePost.hasLiked = neo_res.records[i]._fields[1];
                 if (isMovie) {
                     const localIMDbSearch = await LocalIMDb.findOne({ imdbId });
                     if (localIMDbSearch) {
@@ -63,7 +67,7 @@ router.post('/getFeed', auth, async (req, res) => {
                         await localImdbItem.save();
                     }
                 }
-                posts.push(responsePost);
+                posts.unshift(responsePost);
             } catch (err) {
                 console.log(err);
             }
