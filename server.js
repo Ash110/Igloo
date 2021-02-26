@@ -1,9 +1,10 @@
-const express = require('express');
-const connectToDatabase = require('./db');
 const cors = require('cors');
-const bodyParser = require('body-parser')
 const path = require('path');
-const config = require('config')
+const config = require('config');
+const express = require('express');
+const bodyParser = require('body-parser')
+const connectToDatabase = require('./db');
+const agenda = require('./agenda/agenda');
 
 //Initialise the server
 const app = express();

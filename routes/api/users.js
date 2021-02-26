@@ -288,18 +288,20 @@ router.post('/getUserDetails', auth, async (req, res) => {
     }
 });
 
-//@route   /api/users/getUserFriends
+//@route   /api/users/getUserFriendsCount
 //@desc    Get user details
 //access   Private
 
-router.post('/getUserFriends', auth, async (req, res) => {
+router.post('/getUserFriendsCount', auth, async (req, res) => {
     try {
         const session = neodriver.session();
-        let friends = [];
+        let followers, following = 0;
         try {
-            const neo_res = await session.run(`MATCH (u1{id : "${req.id}"})-[:FOLLOWS]-(u2)  RETURN u2.profilePicture, u2.name, u2.username, u2.id`);
+            followers = await session.run(`MATCH (u1{id : "${req.id}"})<-[:FOLLOWS]-(u2:User)  RETURN COUNT(u2)`);
+            followers = followers.records[0]._fields[0].low;
+            following = await session.run(`MATCH (u1{id : "${req.id}"})-[:FOLLOWS]->(u2:User)  RETURN COUNT(u2)`);
+            following = following.records[0]._fields[0].low;
             // console.log();
-            neo_res.records.map((friend) => friends.push(friend._fields));
         } catch (e) {
             console.log(e);
             await session.close()
@@ -309,7 +311,7 @@ router.post('/getUserFriends', auth, async (req, res) => {
         } then = async () => {
             await session.close()
         }
-        res.status(200).send({ friends });
+        res.status(200).send({ followers, following });
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
