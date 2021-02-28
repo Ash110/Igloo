@@ -240,8 +240,8 @@ router.post('/getUserDetails', auth, async (req, res) => {
             user = await User.findById(userId);
         }
         if (user) {
-            const { name, username, profilePicture, followers, bio, headerImage, pages, _id, isPublicProfile } = user;
-            var userDetails = { name, username, profilePicture, followers: followers.length || 0, bio, headerImage, pages: pages.length, _id, isPublicProfile };
+            const { name, username, profilePicture, followers, following, bio, headerImage, pages, _id, isPublicProfile } = user;
+            var userDetails = { name, username, profilePicture, followers: followers.length || 0, following: following.length || 0, bio, headerImage, pages: pages.length, _id, isPublicProfile };
             userId = _id;
             const session = neodriver.session();
             try {
