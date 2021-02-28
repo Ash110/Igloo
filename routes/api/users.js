@@ -897,4 +897,74 @@ router.post('/updatePublicStatus', auth, async (req, res) => {
     }
 });
 
+//@route   /api/users/getUserFollowers
+//@desc    Get user details
+//access   Private
+
+router.post('/getUserFollowers', auth, async (req, res) => {
+    let { userId, skip } = req.body;
+    if (!userId) {
+        userId = req.id;
+    }
+    console.log(skip);
+    try {
+        const session = neodriver.session();
+        let followers = [];
+        try {
+            const neo_res = await session.run(`MATCH (u1{id : "${userId}"})<-[:FOLLOWS]-(u2:User) RETURN u2.id, u2.name, u2.username, u2.profilePicture SKIP ${skip} LIMIT 30`);
+            const numberOfFollowers = neo_res.records.length;
+            for (let i = 0; i < numberOfFollowers; i++) {
+                followers.push(neo_res.records[i]._fields);
+            }
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to fetch user following details' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        console.log(followers.length === 0);
+        res.status(200).send({ followers, skip: followers.length, end: followers.length === 0 });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   /api/users/getUserFollowing
+//@desc    Get user details
+//access   Private
+
+router.post('/getUserFollowing', auth, async (req, res) => {
+    let { userId, skip } = req.body;
+    if (!userId) {
+        userId = req.id;
+    }
+    try {
+        const session = neodriver.session();
+        let following = [];
+        try {
+            const neo_res = await session.run(`MATCH (u1{id : "${userId}"})-[:FOLLOWS]->(u2:User) RETURN u2.id, u2.name, u2.username, u2.profilePicture SKIP ${skip} LIMIT 30`);
+            const numberOfFollowing = neo_res.records.length;
+            for (let i = 0; i < numberOfFollowing; i++) {
+                following.push(neo_res.records[i]._fields);
+            }
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to fetch user following details' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        res.status(200).send({ following, skip: following.length, end: following.length === 0 });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 module.exports = router;

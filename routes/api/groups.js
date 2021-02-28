@@ -86,7 +86,7 @@ router.post('/getGroupMembers', auth, async (req, res) => {
         var groupMembers = [];
         const session = neodriver.session();
         try {
-            var neo_res = await session.run(`MATCH (u1:User {id : "${req.id}"})-[:FOLLOWS]-(u2:User) RETURN u2.id, u2.name, u2.profilePicture`);
+            var neo_res = await session.run(`MATCH (u1:User {id : "${req.id}"})<-[:FOLLOWS]-(u2:User) RETURN u2.id, u2.name, u2.profilePicture`);
             neo_res.records.map((friend) => friends.push(friend._fields));
             neo_res = await session.run(`MATCH (u:User)-[:MEMBER_OF]-(g:Group{id : "${groupID}"}) RETURN u.id, u.name, u.profilePicture`);
             neo_res.records.map((member) => groupMembers.push(member._fields[0]));

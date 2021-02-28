@@ -5,6 +5,7 @@ const express = require('express');
 const bodyParser = require('body-parser')
 const connectToDatabase = require('./db');
 const agenda = require('./agenda/agenda');
+const helmet = require("helmet");
 
 //Initialise the server
 const app = express();
@@ -12,6 +13,7 @@ const app = express();
 //Initialise Middleware
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 }));
+app.use(helmet());
 // app.use(function (req, res, next) { req.headers.origin = req.headers.origin || req.headers.host; next(); })
 
 // var allowedOrigins = ['http://localhost:5000', 'http://127.0.0.1:5000', 'http://192.168.0.103:5000',
