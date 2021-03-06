@@ -8,6 +8,7 @@ const auth = require('../../middleware/auth')
 const neodriver = require('../../neo4jconnect');
 const sendWelcomeMail = require('../email/welcomeMail');
 const resetPasswordMail = require('../email/resetPasswordMail');
+const sendNewLoginMail = require('../email/newLogin');
 const { check, validationResult } = require('express-validator');
 const { sendActionNotification, userPageNotification } = require('../pushNotifications/actionNotification');
 const { removeResetCode } = require('../../agenda/agendaFunctions');
@@ -130,6 +131,12 @@ router.post('/register',
 router.post('/login',
     async (req, res) => {
         const { email, password } = req.body;
+        let ip = (req.headers['x-forwarded-for'] ||
+            req.socket.remoteAddress || null);
+        if (ip) {
+            ip = ip.split(":");
+            ip = ip[ip.length - 1]
+        }
         validateEmail = (email) => {
             var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
             return re.test(String(email).toLowerCase());
@@ -150,12 +157,10 @@ router.post('/login',
                     iat: new Date().getTime()
                 }
                 await user.updateOne({ lastActive: new Date() });
-                // newLogin(req.headers['x-forwarded-for'] || req.connection.remoteAddress);
-                // sendNewLoginMail(user.email, user.username, (req.headers['x-forwarded-for'] || req.connection.remoteAddress))
-                //     .then(() => console.log("Email Sent"))
-                //     .catch((err) => console.log(err));
-
                 const { name, username, profilePicture } = user;
+                if (ip) {
+                    sendNewLoginMail(name, email, ip);
+                }
                 jwt.sign(
                     payload,
                     config.get('jwtSecret'),
@@ -184,11 +189,10 @@ router.post('/login',
                     iat: new Date().getTime()
                 }
                 await user.updateOne({ lastActive: new Date() });
-                // newLogin(req.headers['x-forwarded-for'] || req.connection.remoteAddress);
-                // sendNewLoginMail(user.email, user.username, (req.headers['x-forwarded-for'] || req.connection.remoteAddress))
-                //     .then(() => console.log("Email Sent"))
-                //     .catch((err) => console.log(err));
                 const { name, username, profilePicture, headerImage, bio } = user;
+                if (ip) {
+                    sendNewLoginMail(name, user.email, ip);
+                }
                 jwt.sign(
                     payload,
                     config.get('jwtSecret'),

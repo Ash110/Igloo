@@ -29,4 +29,51 @@ const changeProfilePictures = async () => {
     }
 }
 
-changeProfilePictures();
+// changeProfilePictures();
+
+const followBothWays = async () => {
+
+    const session = neodriver.session();
+    try {
+        await session.run(`Match (u1:User)-[:FOLLOWS]->(u2:User) CREATE (u2)-[:FOLLOWS]->(u1)`);
+    } catch (e) {
+        console.log(e);
+        await session.close()
+        return res.status(500).send("Unable to follow");
+    } then = async () => {
+        await session.close()
+    }
+}
+
+// followBothWays();
+
+const addFollowersToMongo = async() => {
+    const db = config.get('mongoURI');
+    console.log(db);
+    mongoose.set('useCreateIndex', true)
+    await mongoose.connect(db, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, });
+    console.log("DB connected");
+    const users = await User.find().select('_id name');
+    console.log(users);
+    for (let u of users) {
+        const id = u._id;
+        console.log(u.name);
+        const session = neodriver.session();
+        try {
+            const neo_res = await session.run(`Match (u:User{id : "${id}"})-[:FOLLOWS]->(u2:User) RETURN u2.id, u2.name`);
+            for (let j of neo_res.records){
+                console.log(j._fields[0]);
+                await User.findOneAndUpdate({ _id: id }, { $push: { followers: [j._fields[0]] } });
+                await User.findOneAndUpdate({ _id: id }, { $push: { following: [j._fields[0]] } });
+            }
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to follow");
+        } then = async () => {
+            await session.close()
+        }
+    }
+}
+
+addFollowersToMongo();

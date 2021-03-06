@@ -6,33 +6,20 @@ const bodyParser = require('body-parser')
 const connectToDatabase = require('./db');
 const agenda = require('./agenda/agenda');
 const helmet = require("helmet");
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
 
 //Initialise the server
 const app = express();
 
 //Initialise Middleware
-app.use(bodyParser.json({ limit: "50mb" }));
-app.use(bodyParser.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 }));
 app.use(helmet());
-// app.use(function (req, res, next) { req.headers.origin = req.headers.origin || req.headers.host; next(); })
-
-// var allowedOrigins = ['http://localhost:5000', 'http://127.0.0.1:5000', 'http://192.168.0.103:5000',
-// 'https://www.igloosocial.com','https://igloosocial.com','igloosocial.com', 'www.igloosocial.com'];
-
-// app.use(cors({
-//     origin: function (origin, callback) {
-//         console.log(origin)
-//         console.log(allowedOrigins.indexOf(origin))
-//         if (!origin) return callback(null, true);
-//         if (allowedOrigins.indexOf(origin) === -1 ) {
-//             var msg = 'The CORS policy for this site does not ' +
-//                 'allow access from the specified Origin.';
-//             return callback(new Error(msg), false);
-//         }
-//         return callback(null, true);
-//     },
-//     credentials: true
-// }));
+// Data Sanitization against NoSQL Injection Attacks
+app.use(mongoSanitize());
+// Data Sanitization against XSS attacks
+app.use(xss());
 
 // app.set('trust proxy', 1);
 
