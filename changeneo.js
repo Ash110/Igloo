@@ -47,7 +47,7 @@ const followBothWays = async () => {
 
 // followBothWays();
 
-const addFollowersToMongo = async() => {
+const addFollowersToMongo = async () => {
     const db = config.get('mongoURI');
     console.log(db);
     mongoose.set('useCreateIndex', true)
@@ -61,7 +61,7 @@ const addFollowersToMongo = async() => {
         const session = neodriver.session();
         try {
             const neo_res = await session.run(`Match (u:User{id : "${id}"})-[:FOLLOWS]->(u2:User) RETURN u2.id, u2.name`);
-            for (let j of neo_res.records){
+            for (let j of neo_res.records) {
                 console.log(j._fields[0]);
                 await User.findOneAndUpdate({ _id: id }, { $push: { followers: [j._fields[0]] } });
                 await User.findOneAndUpdate({ _id: id }, { $push: { following: [j._fields[0]] } });

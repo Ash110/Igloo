@@ -125,7 +125,7 @@ router.post('/register',
     });
 
 //@route   /api/users/login
-//@desc    Login a user
+//@desc    Login a user©
 //access   Public
 
 router.post('/login',
@@ -910,6 +910,9 @@ router.post('/getUserFollowers', auth, async (req, res) => {
     if (!userId) {
         userId = req.id;
     }
+    if (!skip) {
+        skip = 0;
+    }
     try {
         const session = neodriver.session();
         let followers = [];
@@ -977,6 +980,9 @@ router.post('/getUserFollowing', auth, async (req, res) => {
     let { userId, skip } = req.body;
     if (!userId) {
         userId = req.id;
+    }
+    if (!skip) {
+        skip = 0;
     }
     try {
         const session = neodriver.session();

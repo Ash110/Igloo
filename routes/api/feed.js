@@ -5,6 +5,8 @@ const Post = require('../../models/Post');
 const Group = require('../../models/Group');
 const auth = require('../../middleware/auth');
 const neodriver = require('../../neo4jconnect');
+const axios = require('axios');
+const config = require('config');
 
 const router = express.Router();
 

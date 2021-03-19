@@ -234,6 +234,10 @@ router.post('/createRoomFromTemplate', auth, async (req, res) => {
     const { roomId } = req.body;
     try {
         const room = await Space.findById(roomId);
+        const user = await User.findById(req.id).select('isPro canCreateSpace');
+        if (user.canCreateSpace == false && !user.isPro) {
+            return res.status(403).send("You can only create one free room per day. You have already used up your free room for today. Upgrade to Pro to create unlimited rooms");
+        }
         let uid = 0;
         let role = RtcRole.PUBLISHER;
         let expireTime = 24 * 3600;
@@ -266,8 +270,15 @@ router.post('/createRoomFromTemplate', auth, async (req, res) => {
             console.log("Failed to reach chat server");
             console.log(err);
         }
-        removeBasicRoom(room._id);
-        alertBasicRoomExpiry(room._id);
+        if (user.isPro) {
+            removeProRoom(room._id);
+            alertProRoomExpiry(room._id);
+        } else {
+            removeBasicRoom(room._id);
+            alertBasicRoomExpiry(room._id);
+            await User.findByIdAndUpdate(req.id, { canCreateSpace: false });
+            removeRoomRestrictions(req.id);
+        }
         sendRoomInvitationNotification({
             selectedUsers: room.members,
             roomId: room._id,

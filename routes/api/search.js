@@ -106,8 +106,9 @@ router.post('/searchSpotify', auth, async (req, res) => {
 
 router.post('/searchImdb', auth, async (req, res) => {
     const { searchText, isMovie } = req.body;
+    console.log(`http://www.omdbapi.com/?apikey=${config.get('omdbAPIKey')}&s=${searchText.toString()}`);
     try {
-        axios.get(`http://www.omdbapi.com/?apikey=${config.get('omdbAPIKey')}&s=${searchText}&type=${isMovie ? "movie" : "series"}`)
+        axios.get(`http://www.omdbapi.com/?apikey=${config.get('omdbAPIKey')}&s=${searchText.toString()}&type=${isMovie ? "movie" : "series"}`)
             .then((movieResponse) => {
                 // console.log(songsResponse.data['tracks']['items']);
                 results = [];
