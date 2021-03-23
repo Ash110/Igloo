@@ -188,9 +188,10 @@ router.post('/checkRoomPermission', auth, async (req, res) => {
     try {
         const session = neodriver.session();
         try {
-            const neo_res = await session.run(`MATCH (r:Room{id : "${roomId}"}) return r.isGlobal, EXISTS((:User{id :"${req.id}"})-[:CAN_ENTER_ROOM]->(r))`);
+            const neo_res = await session.run(`MATCH (r:Room{id : "${roomId}"}) return r.isGlobal, EXISTS((:User{id :"${req.id}"})-[:CAN_ENTER_ROOM]->(r)), r.type`);
             response.hasPermission = (neo_res.records[0]._fields[0] || neo_res.records[0]._fields[1]);
             response.isSpeaker = neo_res.records[0]._fields[1];
+            response.roomType = neo_res.records[0]._fields[2];
         } catch (e) {
             console.log(e);
             await session.close()
@@ -289,6 +290,78 @@ router.post('/createRoomFromTemplate', auth, async (req, res) => {
             roomId: room._id,
             roomToken: token,
             name: room.name,
+        });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   POST /api/spaces/createWatchTogetherRoom
+//@desc    Create a Watch Together room
+//access   Private
+
+router.post('/createWatchTogetherRoom', auth, async (req, res) => {
+    const { name, description, selectedFriends, } = req.body;
+    try {
+        if (!name) {
+            return res.status(403).send("Room must need a name");
+        }
+        const user = await User.findById(req.id).select('isPro');
+        if (!user.isPro) {
+            return res.status(403).send("Only Pro members can create Watch Together spaces. Upgrade today to create a watch together space");
+        }
+        let uid = 0;
+        let role = RtcRole.PUBLISHER;
+        let expireTime = 24 * 3600;
+        const currentTime = Math.floor(Date.now() / 1000);
+        const privilegeExpireTime = currentTime + expireTime;
+        const token = RtcTokenBuilder.buildTokenWithUid(config.get('agoraAppID'), config.get('agoraAppCertificate'), name, uid, role, privilegeExpireTime);
+        const room = new Space({
+            name,
+            description,
+            creator: req.id,
+            roomType: 'watchTogether',
+            roomToken: token,
+            members: selectedFriends,
+        });
+        await room.save();
+        const session = neodriver.session();
+        try {
+            await session.run(`CREATE (r:Room {id : "${room._id}", type : "watchTogether", publishDate:"${new Date().toISOString()}" , isGlobal : ${false}}) return r`);
+            await session.run(`MATCH (u:User{id : "${req.id}"}),(r:Room {id : "${room._id}"}) CREATE (u)-[:HAS_ROOM]->(r) return u.name`);
+            await session.run(`MATCH (u:User{id : "${req.id}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
+            selectedFriends.map(async (friend) => {
+                const usersession = neodriver.session();
+                await usersession.run(`MATCH (u:User{id : "${friend}"}), (r:Room{id:"${room._id}"}) MERGE (u)-[:CAN_ENTER_ROOM]->(r) return u.name`);
+                await usersession.close()
+            });
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).send("Unable to create room");
+        } then = async () => {
+            await session.close()
+        }
+        sendRoomInvitationNotification({
+            selectedUsers: selectedFriends,
+            roomId: room._id,
+            roomName: name,
+            sender: req.id,
+        });
+        try {
+            await axios.post(`${config.get('chatServerUrl')}/registerNewRoom`, {
+                roomId: room._id,
+            });
+        } catch (err) {
+            console.log("Failed to reach chat server");
+            console.log(err);
+        }
+        removeProRoom(room._id);
+        alertProRoomExpiry(room._id);
+        return res.status(200).send({
+            roomId: room._id,
+            roomToken: token,
         });
     } catch (err) {
         console.log(err);
