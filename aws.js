@@ -104,3 +104,21 @@ const getPosts = async () => {
 
 
 // getPosts();
+
+const setTokensToEmpty = async () => {
+    try {
+        const db = config.get('mongoURI');
+        mongoose.set('useCreateIndex', true)
+        await mongoose.connect(db, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, });
+        console.log("DB connected");
+        const users = await User.find().select('_id name');
+        for (let i of users) {
+            console.log(`Changing for ${i.name}`)
+            await User.findByIdAndUpdate(i._id, { notificationTokens : []})
+        }
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+setTokensToEmpty();

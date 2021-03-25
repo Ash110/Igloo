@@ -72,7 +72,6 @@ module.exports = template = (name, ipAddress) => `<!DOCTYPE html
                                             align="left">Hey ${name},</h1>
                                         <p style="box-sizing: border-box; color: #74787E; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; font-size: 16px; line-height: 1.5em; margin-top: 0;"
                                             align="left">We've detected a new login on Igloo from this account. <br>
-                                            These are the login
                                             If it was you, you can ignore this mail, everything's good.
 
                                         </p>

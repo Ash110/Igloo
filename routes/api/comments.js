@@ -74,16 +74,14 @@ router.post('/createComment', auth, async (req, res) => {
             const senderUser = await User.findById(req.id).select('name');
             let userNotificationTokens = await User.findById(post.creator).select('notificationTokens');
             userNotificationTokens = userNotificationTokens.notificationTokens;
-            userNotificationTokens.map((token) => {
-                sendActionNotification(token, `${senderUser.name} has commented your post`, text, "notifications");
-            });
+            sendActionNotification(userNotificationTokens, `${senderUser.name} has commented your post`, text, "notifications");
         }
         const regexp = /@\w+/g;
         const b = [...text.matchAll(regexp)];
         let mentionedUsernames = [];
         b.map((mention) => mentionedUsernames.push(mention[0].slice(1,)));
         sendCommentMentionNotification({ mentionedUsernames, commentText: text, sender: req.id });
-        mentionedUsernames.map(async(username) => {
+        mentionedUsernames.map(async (username) => {
             const notification = new Notification({
                 trigger: 'commentMention',
                 sender: req.id,

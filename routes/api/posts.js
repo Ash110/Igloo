@@ -574,7 +574,6 @@ router.post('/likePost', auth, async (req, res) => {
             const session = neodriver.session();
             try {
                 var x = await session.run(`MATCH (u:User{ id : "${req.id}" }), (p:Post{id : "${postId}"}) CREATE (u)-[:LIKES]->(p)`);
-                console.log(x);
             } catch (e) {
                 console.log(e);
                 await session.close()
@@ -605,9 +604,7 @@ router.post('/likePost', auth, async (req, res) => {
                 const senderUser = await User.findById(req.id).select('name');
                 let userNotificationTokens = await User.findById(post.creator).select('notificationTokens');
                 userNotificationTokens = userNotificationTokens.notificationTokens;
-                userNotificationTokens.map((token) => {
-                    sendActionNotification(token, `${senderUser.name} has liked your post`, "", "notifications");
-                });
+                sendActionNotification(userNotificationTokens, `${senderUser.name} has liked your post`, "Click to view all notifications", "notifications");
             }
             return res.status(200).send("Done");
         }

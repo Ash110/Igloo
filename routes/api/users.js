@@ -344,7 +344,7 @@ router.post('/followUser', auth, async (req, res) => {
         const user = await User.findById(userId).select('notificationTokens');
         if (user.notificationTokens && user.notificationTokens.length > 0) {
             const sender = await User.findById(req.id).select('name');
-            sendActionNotification(user.notificationTokens, `${sender.name} has requested to follow you`, "", "notifications");
+            sendActionNotification(user.notificationTokens, `${sender.name} has requested to follow you`, "Click to accept or reject request", "notifications");
         }
         User.findByIdAndUpdate(userId, { newNotifications: true });
         await User.findByIdAndUpdate(userId, { $inc: { numberOfNewNotifications: 1 } });
@@ -408,7 +408,7 @@ router.post('/acceptFollowRequest', auth, async (req, res) => {
         const user = await User.findById(userId).select('notificationTokens');
         if (user.notificationTokens && user.notificationTokens.length > 0) {
             const sender = await User.findById(req.id).select('name');
-            userPageNotification(user.notificationTokens, `${sender.name} has accepted your follow request`, "", "user", req.id);
+            userPageNotification(user.notificationTokens, `${sender.name} has accepted your follow request`, "Click here to view their profile", "user", req.id);
         }
         const notification = new Notification({
             trigger: 'followingAccepted',

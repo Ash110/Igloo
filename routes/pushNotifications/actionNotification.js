@@ -1,49 +1,44 @@
 const { admin } = require('./firebaseInit')
+const config = require('config');
+const OneSignal = require('onesignal-node');
 
-const notification_options = {
-    priority: "high",
-    timeToLive: 60 * 60 * 24 * 7,
-};
-
-const sendActionNotification = (registrationToken, title, body, page, options = notification_options) => {
-    var payload = {
-        notification: {
-            title,
-            body,
-            "click_action": "FLUTTER_NOTIFICATION_CLICK",
+const sendActionNotification = (registrationTokens, title, body, page,) => {
+    const client = new OneSignal.Client(config.get('oneSignalAppId'), config.get('oneSignalAPIKey'));
+    let notification = {
+        contents: {
+            'en': `${body}`,
         },
+        headings: {
+            'en': `${title}`,
+        },
+        include_player_ids: registrationTokens,
         data: {
             page,
         },
     };
-    admin.messaging().sendToDevice(registrationToken, payload, options)
-        .then(response => {
-            // console.log("NotifSuccessfully sent");
-        })
-        .catch(error => {
-            console.log(error);
-        });
+    client.createNotification(notification)
+        .then(response => { })
+        .catch(e => { console.log(e); });
 }
 
-const userPageNotification = (registrationToken, title, body, page, userId, options = notification_options,) => {
-    var payload = {
-        notification: {
-            title,
-            body,
-            "click_action": "FLUTTER_NOTIFICATION_CLICK",
+const userPageNotification = (registrationTokens, title, body, page, userId,) => {
+    const client = new OneSignal.Client(config.get('oneSignalAppId'), config.get('oneSignalAPIKey'));
+    let notification = {
+        contents: {
+            'en': `${body}`,
         },
+        headings: {
+            'en': `${title}`,
+        },
+        include_player_ids: registrationTokens,
         data: {
             page,
             userId,
         },
     };
-    admin.messaging().sendToDevice(registrationToken, payload, options)
-        .then(response => {
-            // console.log("NotifSuccessfully sent");
-        })
-        .catch(error => {
-            console.log(error);
-        });
+    client.createNotification(notification)
+        .then(response => { })
+        .catch(e => { console.log(e); });
 }
 
 module.exports = { sendActionNotification, userPageNotification };

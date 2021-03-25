@@ -30,6 +30,7 @@
     "multer": "^1.4.2",
     "multer-s3": "^2.9.0",
     "neo4j-driver": "^4.2.2",
+    "onesignal-node": "^3.2.1",
     "pino": "^6.11.0",
     "uuid": "^8.3.2",
     "xss-clean": "^0.1.1"
