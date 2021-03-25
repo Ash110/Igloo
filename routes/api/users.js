@@ -329,26 +329,46 @@ router.post('/getUserFriendsCount', auth, async (req, res) => {
 router.post('/followUser', auth, async (req, res) => {
     const { userId } = req.body;
     try {
-        const session = neodriver.session();
-        try {
-            await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" CREATE (u2)-[:HAS_REQUESTED_FOLLOW]->(u1) return u1.name`);
-        } catch (e) {
-            console.log(e);
-            await session.close()
-            return res.status(500).json({
-                errors: [{ msg: 'Unable to request' }]
-            });
-        } then = async () => {
-            await session.close()
+        const user = await User.findById(userId).select('notificationTokens isPublicProfile');
+        if (user.isPublicProfile) {
+            const session = neodriver.session();
+            try {
+                const x = await session.run(`MATCH (follower),(following) WHERE follower.id = "${req.id}" AND following.id = "${userId}" CREATE (follower)-[:FOLLOWS]->(following) return following.name`);
+                await session.run(`Match (follower:User{id : "${req.id}"}),(following:User{id : "${userId}"}),(g:Group{name:'All Followers'}) WHERE (following)-[:HAS_GROUP]->(g) CREATE (follower)-[:MEMBER_OF]->(g) return follower.id`);
+                await session.run(`Match (following:User{id : "${userId}"}),(follower:User{id : "${req.id}"}),(g:Group{name:'All Followers'}),(p:Post) WHERE ((following)-[:HAS_GROUP]->(g)-[:CONTAINS]-(p)) CREATE (follower)-[:IN_FEED]->(p) return follower.id`);
+            } catch (e) {
+                console.log(e);
+                await session.close()
+                return res.status(500).json({
+                    errors: [{ msg: 'Unable to request' }]
+                });
+            } then = async () => {
+                await session.close()
+            }
+            await User.findOneAndUpdate({ _id: req.id }, { $push: { following: [userId] } });
+            await User.findOneAndUpdate({ _id: userId }, { $push: { followers: [req.id] } });
+            res.status(200).send("done");
+        } else {
+            const session = neodriver.session();
+            try {
+                await session.run(`MATCH (u1),(u2) WHERE u1.id = "${userId}" AND u2.id = "${req.id}" CREATE (u2)-[:HAS_REQUESTED_FOLLOW]->(u1) return u1.name`);
+            } catch (e) {
+                console.log(e);
+                await session.close()
+                return res.status(500).json({
+                    errors: [{ msg: 'Unable to request' }]
+                });
+            } then = async () => {
+                await session.close()
+            }
+            if (user.notificationTokens && user.notificationTokens.length > 0) {
+                const sender = await User.findById(req.id).select('name');
+                sendActionNotification(user.notificationTokens, `${sender.name} has requested to follow you`, "Click to accept or reject request", "notifications");
+            }
+            User.findByIdAndUpdate(userId, { newNotifications: true });
+            await User.findByIdAndUpdate(userId, { $inc: { numberOfNewNotifications: 1 } });
+            res.status(200).send("Request sent!");
         }
-        const user = await User.findById(userId).select('notificationTokens');
-        if (user.notificationTokens && user.notificationTokens.length > 0) {
-            const sender = await User.findById(req.id).select('name');
-            sendActionNotification(user.notificationTokens, `${sender.name} has requested to follow you`, "Click to accept or reject request", "notifications");
-        }
-        User.findByIdAndUpdate(userId, { newNotifications: true });
-        await User.findByIdAndUpdate(userId, { $inc: { numberOfNewNotifications: 1 } });
-        res.status(200).send("Request sent!");
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
@@ -873,7 +893,6 @@ router.post('/getPrivacySettings', auth, async (req, res) => {
     try {
         const user = await User.findById(req.id).select('isPublicProfile');
         let { isPublicProfile } = user;
-        console.log(isPublicProfile);
         return res.status(200).send({ privacySettings: { isPublicProfile } })
     } catch (err) {
         console.log(err);
