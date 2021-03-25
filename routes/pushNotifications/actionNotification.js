@@ -1,4 +1,4 @@
-const { admin } = require('./firebaseInit')
+
 const config = require('config');
 const OneSignal = require('onesignal-node');
 

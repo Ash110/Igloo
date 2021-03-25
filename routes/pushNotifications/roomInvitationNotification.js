@@ -1,5 +1,4 @@
 const User = require('../../models/User');
-const { admin } = require('./firebaseInit');
 const config = require('config');
 const OneSignal = require('onesignal-node');
 
