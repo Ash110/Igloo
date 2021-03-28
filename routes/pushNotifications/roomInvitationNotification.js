@@ -47,10 +47,12 @@ const sendRoomInvitationNotification = async ({ selectedUsers, roomId, roomName,
     };
     selectedUsers.map(async (user) => {
         const selectedUser = await User.findById(user).select('notificationTokens');
-        notification.include_player_ids = selectedUser.notificationTokens;
-        client.createNotification(notification)
-            .then(response => { })
-            .catch(e => { console.log(e); });
+        if (selectedUser && selectedUser.notificationTokens && selectedUser.notificationTokens.length > 0) {
+            notification.include_player_ids = selectedUser.notificationTokens;
+            client.createNotification(notification)
+                .then(response => { })
+                .catch(e => { console.log(e); });
+        }
     });
 }
 

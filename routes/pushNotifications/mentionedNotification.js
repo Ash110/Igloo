@@ -50,7 +50,7 @@ const sendCommentMentionNotification = async ({ mentionedUsernames, commentText,
     };
     mentionedUsernames.map(async (user) => {
         const selectedUser = await User.findOne({ username: user }).select('notificationTokens');
-        if (selectedUser) {
+        if (selectedUser && selectedUser.notificationTokens && selectedUser.notificationTokens.length > 0) {
             notification.include_player_ids = selectedUser.notificationTokens;
             client.createNotification(notification)
                 .then(response => { })

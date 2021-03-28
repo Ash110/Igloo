@@ -333,7 +333,7 @@ router.post('/followUser', auth, async (req, res) => {
         if (user.isPublicProfile) {
             const session = neodriver.session();
             try {
-                const x = await session.run(`MATCH (follower),(following) WHERE follower.id = "${req.id}" AND following.id = "${userId}" CREATE (follower)-[:FOLLOWS]->(following) return following.name`);
+                await session.run(`MATCH (follower),(following) WHERE follower.id = "${req.id}" AND following.id = "${userId}" CREATE (follower)-[:FOLLOWS]->(following) return following.name`);
                 await session.run(`Match (follower:User{id : "${req.id}"}),(following:User{id : "${userId}"}),(g:Group{name:'All Followers'}) WHERE (following)-[:HAS_GROUP]->(g) CREATE (follower)-[:MEMBER_OF]->(g) return follower.id`);
                 await session.run(`Match (following:User{id : "${userId}"}),(follower:User{id : "${req.id}"}),(g:Group{name:'All Followers'}),(p:Post) WHERE ((following)-[:HAS_GROUP]->(g)-[:CONTAINS]-(p)) CREATE (follower)-[:IN_FEED]->(p) return follower.id`);
             } catch (e) {
