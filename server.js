@@ -18,6 +18,7 @@ app.use(helmet());
 app.use(mongoSanitize());
 // Data Sanitization against XSS attacks
 app.use(xss());
+app.use(cors());
 
 // app.set('trust proxy', 1);
 
@@ -27,6 +28,7 @@ connectToDatabase();
 //Setting up routes
 app.use('/api/feed', require('./routes/api/feed'));
 app.use('/api/users', require('./routes/api/users'));
+app.use('/api/codes', require('./routes/api/codes'));
 app.use('/api/files', require('./routes/api/files'));
 app.use('/api/pages', require('./routes/api/pages'));
 app.use('/api/posts', require('./routes/api/posts'));

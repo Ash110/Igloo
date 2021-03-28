@@ -24,12 +24,29 @@ router.post('/reportPost', auth, async (req, res) => {
         }
         report = new Report({
             token,
-            creator : req.id,
+            creator: req.id,
             reasons,
-            reportedPost : postId,
+            reportedPost: postId,
         });
         await report.save();
         return res.status(200).send(token);
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+
+//@route   POST /api/reports/getAllReports
+//@desc    Report a post
+//access   Private
+
+router.post('/getAllReports', async (req, res) => {
+    const { } = req.body;
+    try {
+        let reports = await Report.find().populate('reportedPost', 'image caption');
+        console.log(reports);
+        return res.status(200).send(reports);
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
