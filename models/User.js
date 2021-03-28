@@ -27,12 +27,12 @@ const UserModel = new Schema({
     profilePicture: {
         type: String,
         required: true,
-        default: "user.png"
+        default: "https://iglooprofilepictures.s3.ap-south-1.amazonaws.com/user.png"
     },
     headerImage: {
         type: String,
         required: true,
-        default: "default.png"
+        default: "https://iglooheaderimages.s3.ap-south-1.amazonaws.com/default.png"
     },
     bio: {
         type: String,

@@ -65,7 +65,7 @@ router.post('/register',
                 password,
                 username: username.toLowerCase(),
                 bio: "",
-                profilePicture: "user.png",
+                profilePicture: "https://iglooprofilepictures.s3.ap-south-1.amazonaws.com/user.png",
             });
             const salt = await bcrypt.genSalt(10);
             user.password = await bcrypt.hash(password, salt);
