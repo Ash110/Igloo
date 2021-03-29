@@ -125,6 +125,13 @@ const UserModel = new Schema({
     isPublicProfile: {
         type: Boolean,
         default: false,
+    },
+    referralCode: {
+        type: String,
+    },
+    redeemedInviteTenOffer: {
+        type: Boolean,
+        default: false,
     }
 });
 

@@ -1028,4 +1028,85 @@ router.post('/getUserFollowing', auth, async (req, res) => {
     }
 });
 
+//@route   /api/users/getUserReferrals
+//@desc    Get user's referral details
+//access   Private
+
+router.post('/getUserReferrals', auth, async (req, res) => {
+    try {
+        let { referralCode, redeemedInviteTenOffer } = await User.findById(req.id).select('referralCode redeemedInviteTenOffer');
+        if (!referralCode) {
+            while (!referralCode) {
+                var token = '';
+                const charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                for (var i = 0; i < 6; i++) {
+                    var randomPoz = Math.floor(Math.random() * 36);
+                    token += charSet.substring(randomPoz, randomPoz + 1);
+                }
+                token = token.toUpperCase();
+                const user = await User.findOne({ referralCode: token });
+                if (!user) {
+                    referralCode = token;
+                    User.findByIdAndUpdate(req.id, { referralCode });
+                }
+            }
+        }
+        const session = neodriver.session();
+        let numberOfReferrals = 0;
+        try {
+            const neo_res = await session.run(`MATCH (u1{id : "${req.id}"})-[:REFERRED]->(u2:User) RETURN COUNT(u2)`);
+            numberOfReferrals = neo_res.records[0]._fields[0].low;
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to fetch user following details' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+        res.status(200).send({ referralCode, numberOfReferrals, redeemedInviteTenOffer });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   POST /api/users/redeemTenInvites
+//@desc    Redeem pro for ten invites
+//access   Private
+
+router.post('/redeemTenInvites', auth, async (req, res) => {
+    try {
+        const session = neodriver.session();
+        try {
+            const neo_res = await session.run(`MATCH (u1{id : "${req.id}"})-[:REFERRED]->(u2:User) RETURN COUNT(u2)`);
+            const numberOfReferrals = neo_res.records[0]._fields[0].low;
+            if (numberOfReferrals >= 10) {
+                const today = new Date();
+                const proExpiryDate = new Date(today.setMonth(today.getMonth() + 1));
+                await User.findByIdAndUpdate(req.id, {
+                    redeemedInviteTenOffer: true,
+                    isPro: true,
+                    proExpiryDate,
+                });
+                return res.status(200).send(proExpiryDate);
+            } else {
+                res.status(403).send();
+            }
+        } catch (e) {
+            console.log(e);
+            await session.close()
+            return res.status(500).json({
+                errors: [{ msg: 'Unable to fetch user following details' }]
+            });
+        } then = async () => {
+            await session.close()
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 module.exports = router;
