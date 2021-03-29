@@ -23,6 +23,11 @@ const CodeModel = new Schema({
         type: Number,
         required: true,
     },
+    redeemed: {
+        type: Boolean,
+        required: true,
+        default: false,
+    }
 });
 
 module.exports = Code = mongoose.model('Code', CodeModel);

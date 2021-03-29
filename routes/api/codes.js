@@ -15,7 +15,7 @@ const router = express.Router();
 router.post('/getAllCodes', async (req, res) => {
     const { } = req.body;
     try {
-        let codes = await Codes.find();
+        let codes = await Code.find();
         return res.status(200).send(codes);
     } catch (err) {
         console.log(err);
@@ -41,7 +41,7 @@ router.post('/createCode', async (req, res) => {
             token, reasonForCode, durationInDays, expiryDate
         });
         await code.save();
-        return res.status(200).send();
+        return res.status(200).send(token);
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
