@@ -87,8 +87,8 @@ router.post('/register',
 
             //Check Referral Code
             let referringUser
-            if(referralCode){
-                referringUser = await User.findOne({referralCode : referralCode.trim().toUpperCase()}).select('_id');
+            if (referralCode) {
+                referringUser = await User.findOne({ referralCode: referralCode.trim().toUpperCase() }).select('_id');
             }
 
             const session = neodriver.session();
@@ -97,7 +97,7 @@ router.post('/register',
                 await session.run(`CREATE (g:Group {id : "${group._id}", name : "${group.name}", description: "Share with everyone who follows you"}) RETURN g`);
                 await session.run(`MATCH (u), (g) WHERE u.id = "${user._id}" AND g.id = "${group._id}" CREATE (u)-[:HAS_GROUP]->(g)`);
                 await session.run(`MATCH (u), (g) WHERE u.id = "${user._id}" AND g.id = "${group._id}" CREATE (u)-[:MEMBER_OF]->(g)`);
-                if(referringUser){
+                if (referringUser) {
                     await session.run(`MATCH (u1), (u2) WHERE u1.id = "${referringUser._id}" AND u2.id = "${user._id}" CREATE (u1)-[:REFERRED]->(u2)`);
                 }
             } catch (e) {
@@ -1110,6 +1110,25 @@ router.post('/redeemTenInvites', auth, async (req, res) => {
         } then = async () => {
             await session.close()
         }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   POST /api/users/logout
+//@desc    Log a user out
+//access   Private
+
+router.post('/logout', auth, async (req, res) => {
+    const { notificationUserId } = req.body;
+    try {
+        await User.findByIdAndUpdate(req.id,
+            { $pullAll: { notificationTokens: [notificationUserId] } },
+            { new: true },
+            function (err, _) { console.log(err); }
+        );
+        res.status(200).send();
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
