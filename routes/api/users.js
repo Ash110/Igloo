@@ -31,15 +31,12 @@ router.post('/register',
         check('username', 'Username can only contain a-z A-Z 0-9, underscore (_) and full stop (.)').matches(/^[a-zA-Z0-9_.]+$/, 'i'),
     ]
     , async (req, res) => {
-        const { name, email, password, confirmPassword, username } = req.body;
+        const { name, email, password, referralCode, username } = req.body;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
         //Check if passwords are same
-        if (!(password === confirmPassword)) {
-            return res.status(400).json({ errors: [{ msg: 'Passwords are not the same' }] });
-        }
         try {
             //Check if email exists
             let user = await User.findOne({ email });
@@ -87,12 +84,22 @@ router.post('/register',
                 await User.findByIdAndDelete(user._id);
                 return res.status(500).send("Failed to make group")
             }
+
+            //Check Referral Code
+            let referringUser
+            if(referralCode){
+                referringUser = await User.findOne({referralCode : referralCode.trim().toUpperCase()}).select('_id');
+            }
+
             const session = neodriver.session();
             try {
                 await session.run(`CREATE (u:User {id : "${user._id}", name : "${user.name}", profilePicture: "user.png", username :"${user.username}"}) RETURN u`);
                 await session.run(`CREATE (g:Group {id : "${group._id}", name : "${group.name}", description: "Share with everyone who follows you"}) RETURN g`);
                 await session.run(`MATCH (u), (g) WHERE u.id = "${user._id}" AND g.id = "${group._id}" CREATE (u)-[:HAS_GROUP]->(g)`);
                 await session.run(`MATCH (u), (g) WHERE u.id = "${user._id}" AND g.id = "${group._id}" CREATE (u)-[:MEMBER_OF]->(g)`);
+                if(referringUser){
+                    await session.run(`MATCH (u1), (u2) WHERE u1.id = "${referringUser._id}" AND u2.id = "${user._id}" CREATE (u1)-[:REFERRED]->(u2)`);
+                }
             } catch (e) {
                 console.log(e);
                 await session.close();
@@ -1047,7 +1054,7 @@ router.post('/getUserReferrals', auth, async (req, res) => {
                 const user = await User.findOne({ referralCode: token });
                 if (!user) {
                     referralCode = token;
-                    User.findByIdAndUpdate(req.id, { referralCode });
+                    await User.findByIdAndUpdate(req.id, { referralCode });
                 }
             }
         }
