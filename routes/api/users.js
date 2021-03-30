@@ -1121,12 +1121,13 @@ router.post('/redeemTenInvites', auth, async (req, res) => {
 //access   Private
 
 router.post('/logout', auth, async (req, res) => {
-    const { notificationUserId } = req.body;
+    const { userId } = req.body;
     try {
         await User.findByIdAndUpdate(req.id,
-            { $pullAll: { notificationTokens: [notificationUserId] } },
-            { new: true },
-            function (err, _) { console.log(err); }
+            {
+                $pull:
+                    { 'notificationTokens': userId }
+            }
         );
         res.status(200).send();
     } catch (err) {
