@@ -1,11 +1,11 @@
 const cors = require('cors');
 const path = require('path');
-const express = require('express');
-const connectToDatabase = require('./db');
-const agenda = require('./agenda/agenda');
 const helmet = require("helmet");
-const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
+const express = require('express');
+const initSentry = require('./sentry');
+const connectToDatabase = require('./db');
+const mongoSanitize = require('express-mongo-sanitize');
 
 //Initialise the server
 const app = express();
@@ -24,6 +24,9 @@ app.use(cors());
 
 //Connect to DB
 connectToDatabase();
+
+//Setup Sentry
+initSentry();
 
 //Setting up routes
 app.use('/api/feed', require('./routes/api/feed'));
