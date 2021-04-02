@@ -93,7 +93,7 @@ const getPosts = async () => {
                     console.log(`File uploaded successfully. ${data.Location}`);
                     await Post.findByIdAndUpdate(i._id, { image: data.Location });
                 });
-            } 
+            }
         }
     } catch (err) {
         console.log(err);
@@ -105,7 +105,25 @@ const getPosts = async () => {
 
 // getPosts();
 
-const setTokensToEmpty = async () => {
+// const setTokensToEmpty = async () => {
+//     try {
+//         const db = config.get('mongoURI');
+//         mongoose.set('useCreateIndex', true)
+//         await mongoose.connect(db, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, });
+//         console.log("DB connected");
+//         const users = await User.find().select('_id name');
+//         for (let i of users) {
+//             console.log(`Changing for ${i.name}`)
+//             await User.findByIdAndUpdate(i._id, { notificationTokens : []})
+//         }
+//     } catch (err) {
+//         console.log(err);
+//     }
+// }
+
+// setTokensToEmpty();
+
+const setUsersToPro = async () => {
     try {
         const db = config.get('mongoURI');
         mongoose.set('useCreateIndex', true)
@@ -113,12 +131,12 @@ const setTokensToEmpty = async () => {
         console.log("DB connected");
         const users = await User.find().select('_id name');
         for (let i of users) {
-            console.log(`Changing for ${i.name}`)
-            await User.findByIdAndUpdate(i._id, { notificationTokens : []})
+            console.log(i.name);
+            await User.findByIdAndUpdate(i._id, { isPro: true, proExpiryDate: "2029-02-10T08:53:21.000+00:00" })
         }
     } catch (err) {
         console.log(err);
     }
 }
 
-setTokensToEmpty();
+setUsersToPro();
