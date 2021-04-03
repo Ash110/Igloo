@@ -39,7 +39,7 @@ router.post('/register',
         //Check if passwords are same
         try {
             //Check if email exists
-            let user = await User.findOne({ email });
+            let user = await User.findOne({ email : email.toLowerCase() });
             if (user) {
                 return res.status(400).json({ errors: [{ msg: 'An account has already been registered with this email. Do you want to login instead?' }] });
             }
