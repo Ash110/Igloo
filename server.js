@@ -26,7 +26,7 @@ app.use(cors());
 connectToDatabase();
 
 //Setup Sentry
-initSentry();
+// initSentry();
 
 //Setting up routes
 app.use('/api/feed', require('./routes/api/feed'));
