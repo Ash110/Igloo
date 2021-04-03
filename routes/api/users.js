@@ -277,7 +277,7 @@ router.post('/getUserDetails', auth, async (req, res) => {
                     }
                 }
                 let mutuals = [];
-                const neo_mutuals = await session.run(`Match(:User{id : "${req.id}"})-[:FOLLOWS]-(u:User)-[:FOLLOWS]-(:User{id : "${userId}"}) return u.id, u.name, u.profilePicture`);
+                const neo_mutuals = await session.run(`Match(:User{id : "${req.id}"})-[:FOLLOWS]->(u:User)<-[:FOLLOWS]-(:User{id : "${userId}"}) return u.id, u.name, u.profilePicture`);
                 neo_mutuals.records.map((mutual) => mutuals.push(mutual._fields));
                 userDetails.mutuals = mutuals;
             } catch (e) {
