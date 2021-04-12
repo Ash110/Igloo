@@ -582,10 +582,12 @@ router.post('/likePost', auth, async (req, res) => {
                 await session.close()
             }
             await Post.findOneAndUpdate({ _id: postId }, { $push: { likes: [req.id] } });
+            console.log("1");
             const senderUser = await User.findById(req.id).select('name');
             let userNotificationTokens = await User.findById(req.id).select('notificationTokens');
             userNotificationTokens = userNotificationTokens.notificationTokens;
             sendActionNotification(userNotificationTokens, `${senderUser.name} has liked your post`, "Click to view all notifications", "notifications");
+            console.log("2");
             if (req.id !== post.creator.toString()) {
                 const notification = new Notification({
                     trigger: 'postLike',
