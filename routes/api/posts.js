@@ -582,6 +582,10 @@ router.post('/likePost', auth, async (req, res) => {
                 await session.close()
             }
             await Post.findOneAndUpdate({ _id: postId }, { $push: { likes: [req.id] } });
+            const senderUser = await User.findById(req.id).select('name');
+            let userNotificationTokens = await User.findById(req.id).select('notificationTokens');
+            userNotificationTokens = userNotificationTokens.notificationTokens;
+            sendActionNotification(userNotificationTokens, `${senderUser.name} has liked your post`, "Click to view all notifications", "notifications");
             if (req.id !== post.creator.toString()) {
                 const notification = new Notification({
                     trigger: 'postLike',
@@ -602,7 +606,7 @@ router.post('/likePost', auth, async (req, res) => {
                 });
                 await User.findByIdAndUpdate(post.creator, { $inc: { numberOfNewNotifications: 1 } });
                 const senderUser = await User.findById(req.id).select('name');
-                let userNotificationTokens = await User.findById(post.creator).select('notificationTokens');
+                let userNotificationTokens = await User.findById(req.id).select('notificationTokens');
                 userNotificationTokens = userNotificationTokens.notificationTokens;
                 sendActionNotification(userNotificationTokens, `${senderUser.name} has liked your post`, "Click to view all notifications", "notifications");
             }

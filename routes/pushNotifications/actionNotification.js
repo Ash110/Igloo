@@ -3,6 +3,7 @@ const config = require('config');
 const OneSignal = require('onesignal-node');
 
 const sendActionNotification = (registrationTokens, title, body, page,) => {
+    console.log(registrationTokens, title, body)
     if (registrationTokens && registrationTokens.length == 0) {
         return;
     } else {
@@ -20,8 +21,8 @@ const sendActionNotification = (registrationTokens, title, body, page,) => {
             },
         };
         client.createNotification(notification)
-            .then(response => { })
-            .catch(e => { console.log(e); });
+            .then(response => { console.log(response.body.errors.invalid_player_ids) })
+            .catch (e => { console.log(e); });
     }
 }
 
