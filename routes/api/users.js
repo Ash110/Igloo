@@ -12,7 +12,7 @@ const sendNewLoginMail = require('../email/newLogin');
 const { check, validationResult } = require('express-validator');
 const { sendActionNotification, userPageNotification } = require('../pushNotifications/actionNotification');
 const { removeResetCode } = require('../../agenda/agendaFunctions');
-const semiAuth = require('../../middleware/auth');
+const semiAuth = require('../../middleware/semiAuth');
 
 const router = express.Router();
 
