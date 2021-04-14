@@ -12,6 +12,7 @@ const sendNewLoginMail = require('../email/newLogin');
 const { check, validationResult } = require('express-validator');
 const { sendActionNotification, userPageNotification } = require('../pushNotifications/actionNotification');
 const { removeResetCode } = require('../../agenda/agendaFunctions');
+const semiAuth = require('../../middleware/auth');
 
 const router = express.Router();
 
@@ -39,7 +40,7 @@ router.post('/register',
         //Check if passwords are same
         try {
             //Check if email exists
-            let user = await User.findOne({ email : email.toLowerCase() });
+            let user = await User.findOne({ email: email.toLowerCase() });
             if (user) {
                 return res.status(400).json({ errors: [{ msg: 'An account has already been registered with this email. Do you want to login instead?' }] });
             }
@@ -236,14 +237,14 @@ router.post('/updateBio', auth, async (req, res) => {
 
 //@route   /api/users/getUserDetails
 //@desc    Get user details
-//access   Private
+//access   Semi-Private
 
-router.post('/getUserDetails', auth, async (req, res) => {
+router.post('/getUserDetails', semiAuth, async (req, res) => {
     let { userId, userUsername, isUsername } = req.body;
-    if (isUsername) {
-        userUsername = userUsername.replace('@', '');
-    }
     try {
+        if (isUsername) {
+            userUsername = userUsername.replace('@', '');
+        }
         let user;
         if (isUsername) {
             user = await User.findOne({ username: userUsername });
@@ -254,40 +255,42 @@ router.post('/getUserDetails', auth, async (req, res) => {
             const { name, username, profilePicture, followers, following, bio, headerImage, pages, _id, isPublicProfile } = user;
             var userDetails = { name, username, profilePicture, followers: followers.length || 0, following: following.length || 0, bio, headerImage, pages: pages.length, _id, isPublicProfile };
             userId = _id;
-            const session = neodriver.session();
-            try {
-                let neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${req.id}" AND u2.id = "${userId}" RETURN EXISTS((u2)-[:HAS_BLOCKED]->(u1))`);
-                if (neo_res.records[0]._fields[0]) {
-                    return res.status(403).send("Banned");
-                }
-                neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${req.id}" AND u2.id = "${userId}" RETURN EXISTS((u1)-[:HAS_BLOCKED]->(u2))`);
-                userDetails.isBlocked = neo_res.records[0]._fields[0];
-                neo_res = await session.run(`MATCH (other),(you) WHERE other.id = "${userId}" AND you.id = "${req.id}" RETURN EXISTS((you)-[:FOLLOWS]->(other))`);
-                userDetails.isFollowing = neo_res.records[0]._fields[0];
-                if (!userDetails.isFollowing) {
-                    try {
-                        const neo_res2 = await session.run(`MATCH (other),(you) WHERE other.id = "${userId}" AND you.id = "${req.id}" RETURN EXISTS((you)-[:HAS_REQUESTED_FOLLOW]->(other))`);
-                        userDetails.hasRequestedFollow = neo_res2.records[0]._fields[0];
-                    } catch (err) {
-                        console.log(e);
-                        await session.close()
-                        return res.status(500).json({
-                            errors: [{ msg: 'Unable to fetch user following details' }]
-                        });
+            if (req.id) {
+                const session = neodriver.session();
+                try {
+                    let neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${req.id}" AND u2.id = "${userId}" RETURN EXISTS((u2)-[:HAS_BLOCKED]->(u1))`);
+                    if (neo_res.records[0]._fields[0]) {
+                        return res.status(403).send("Banned");
                     }
+                    neo_res = await session.run(`MATCH (u1),(u2) WHERE u1.id = "${req.id}" AND u2.id = "${userId}" RETURN EXISTS((u1)-[:HAS_BLOCKED]->(u2))`);
+                    userDetails.isBlocked = neo_res.records[0]._fields[0];
+                    neo_res = await session.run(`MATCH (other),(you) WHERE other.id = "${userId}" AND you.id = "${req.id}" RETURN EXISTS((you)-[:FOLLOWS]->(other))`);
+                    userDetails.isFollowing = neo_res.records[0]._fields[0];
+                    if (!userDetails.isFollowing) {
+                        try {
+                            const neo_res2 = await session.run(`MATCH (other),(you) WHERE other.id = "${userId}" AND you.id = "${req.id}" RETURN EXISTS((you)-[:HAS_REQUESTED_FOLLOW]->(other))`);
+                            userDetails.hasRequestedFollow = neo_res2.records[0]._fields[0];
+                        } catch (err) {
+                            console.log(e);
+                            await session.close()
+                            return res.status(500).json({
+                                errors: [{ msg: 'Unable to fetch user following details' }]
+                            });
+                        }
+                    }
+                    let mutuals = [];
+                    const neo_mutuals = await session.run(`Match(:User{id : "${req.id}"})-[:FOLLOWS]->(u:User)<-[:FOLLOWS]-(:User{id : "${userId}"}) return u.id, u.name, u.profilePicture`);
+                    neo_mutuals.records.map((mutual) => mutuals.push(mutual._fields));
+                    userDetails.mutuals = mutuals;
+                } catch (e) {
+                    console.log(e);
+                    await session.close()
+                    return res.status(500).json({
+                        errors: [{ msg: 'Unable to fetch user following details' }]
+                    });
+                } then = async () => {
+                    await session.close()
                 }
-                let mutuals = [];
-                const neo_mutuals = await session.run(`Match(:User{id : "${req.id}"})-[:FOLLOWS]->(u:User)<-[:FOLLOWS]-(:User{id : "${userId}"}) return u.id, u.name, u.profilePicture`);
-                neo_mutuals.records.map((mutual) => mutuals.push(mutual._fields));
-                userDetails.mutuals = mutuals;
-            } catch (e) {
-                console.log(e);
-                await session.close()
-                return res.status(500).json({
-                    errors: [{ msg: 'Unable to fetch user following details' }]
-                });
-            } then = async () => {
-                await session.close()
             }
             res.status(200).send(userDetails);
         } else {
