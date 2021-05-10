@@ -133,7 +133,7 @@ router.post('/register',
     });
 
 //@route   /api/users/login
-//@desc    Login a user©
+//@desc    Login a user
 //access   Public
 
 router.post('/login',

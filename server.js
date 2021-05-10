@@ -1,9 +1,11 @@
+const fs = require('fs');
 const cors = require('cors');
 const path = require('path');
+const morgan = require('morgan');
 const helmet = require("helmet");
 const xss = require('xss-clean');
-const initSentry = require('./sentry');
 const express = require('express');
+const initSentry = require('./sentry');
 const connectToDatabase = require('./db');
 const mongoSanitize = require('express-mongo-sanitize');
 
@@ -14,11 +16,18 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 }));
 app.use(helmet());
+
 // Data Sanitization against NoSQL Injection Attacks
 app.use(mongoSanitize());
+
 // Data Sanitization against XSS attacks
 app.use(xss());
 app.use(cors());
+
+//Morgan for logging
+var accessLogStream = fs.createWriteStream(path.join(__dirname, 'reqs.log'), { flags: 'a' })
+app.use(morgan('(:remote-addr - [:date[iso]]) (":method :url HTTP/:http-version" :status) (TIME : :response-time[3] ms) (":user-agent" :req[x-auth-token])', { stream: accessLogStream }))
+
 
 // app.set('trust proxy', 1);
 
