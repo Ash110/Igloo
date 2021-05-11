@@ -24,8 +24,7 @@ app.use(mongoSanitize());
 app.use(xss());
 
 //Setting up CORS
-app.use(cors());
-app.options('*', cors());
+app.use(cors({ origin: true, credentials: true }));
 
 //Morgan for logging
 var accessLogStream = fs.createWriteStream(path.join(__dirname, 'reqs.log'), { flags: 'a' })
