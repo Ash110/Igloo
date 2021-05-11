@@ -21,6 +21,11 @@ const UserModel = new Schema({
         required: true,
         unique: true
     },
+    dateOfJoin: {
+        type: Date,
+        required: true,
+        default: new Date()
+    },
     dateOfBirth: {
         type: Date,
     },
