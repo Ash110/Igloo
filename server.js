@@ -40,6 +40,7 @@ connectToDatabase();
 //Setting up routes
 app.use('/api/feed', require('./routes/api/feed'));
 app.use('/api/users', require('./routes/api/users'));
+app.use('/api/admin', require('./routes/api/admin'));
 app.use('/api/codes', require('./routes/api/codes'));
 app.use('/api/files', require('./routes/api/files'));
 app.use('/api/pages', require('./routes/api/pages'));
