@@ -24,7 +24,7 @@ app.use(mongoSanitize());
 app.use(xss());
 
 //Setting up CORS
-// app.use(cors({ origin: true, credentials: true }));
+// app.use(cors());
 const allowedOrigins = ["http://localhost:3000",];
 app.use(function (req, res, next) {
     let origin = req.headers.origin;
@@ -44,7 +44,7 @@ var accessLogStream = fs.createWriteStream(path.join(__dirname, 'reqs.log'), { f
 app.use(morgan('(:remote-addr - [:date[iso]]) (":method :url HTTP/:http-version" :status) (TIME : :response-time[3] ms) (":user-agent" :req[x-auth-token])', { stream: accessLogStream }))
 
 
-// app.set('trust proxy', 1);
+app.set('trust proxy', 1);
 
 //Connect to DB
 connectToDatabase();
