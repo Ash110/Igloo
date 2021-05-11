@@ -22,7 +22,10 @@ app.use(mongoSanitize());
 
 // Data Sanitization against XSS attacks
 app.use(xss());
+
+//Setting up CORS
 app.use(cors());
+app.options('*', cors());
 
 //Morgan for logging
 var accessLogStream = fs.createWriteStream(path.join(__dirname, 'reqs.log'), { flags: 'a' })
