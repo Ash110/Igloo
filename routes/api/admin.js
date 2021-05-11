@@ -88,7 +88,6 @@ router.post('/postsPage', adminAuth, async (req, res) => {
         yesterday.setDate(yesterday.getDate() - 1);
         var thirtydaysago = new Date();
         thirtydaysago.setDate(thirtydaysago.getDate() - 30);
-        console.log(thirtydaysago);
         const posts = await Post.find().limit(50).sort({ publishTime: 'desc' }).populate('creator', 'name username');
         const lastDay = await Post.find({
             publishTime:
@@ -98,8 +97,33 @@ router.post('/postsPage', adminAuth, async (req, res) => {
             publishTime:
                 { "$gte": thirtydaysago }
         });
-        console.log(last30Days, lastDay);
         return res.status(200).send({ posts, lastDay, last30Days });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
+//@route   POST /api/admin/pagesPage
+//@desc    Posts Page 
+//access   Private
+
+router.post('/pagesPage', adminAuth, async (req, res) => {
+    try {
+        var yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        var thirtydaysago = new Date();
+        thirtydaysago.setDate(thirtydaysago.getDate() - 30);
+        const pages = await Page.find().limit(50).sort({ dateOfCreation: 'desc' }).populate('creator', 'name username');
+        const lastDay = await Page.find({
+            dateOfCreation:
+                { "$gte": yesterday }
+        });
+        const last30Days = await Page.find({
+            dateOfCreation:
+                { "$gte": thirtydaysago }
+        });
+        return res.status(200).send({ pages, lastDay, last30Days });
     } catch (err) {
         console.log(err);
         return res.status(500).send("Server Error");
