@@ -1,4 +1,4 @@
-name: CI Deploy
+name: Deploy to EC2 PM2
 on:
   push:
     branches:
