@@ -74,29 +74,13 @@ app.use('/posts', express.static('images/posts'));
 app.use('/profilepictures', express.static('images/profilepictures'));
 app.use('/headerimages', express.static('images/headerimages'));
 
-app.get('*', (req, res) => {
+app.get('/', (req, res) => {
     try {
-        const resolvingPath = path.resolve(
-            __dirname,
-            'client',
-            // 'build',
-            'index.html'
-        );
-        return res.sendFile(resolvingPath);
+        
+        return res.status(200).send("v0.9");
     } catch (err) {
         console.log(err)
-        if (err.code === 'ENOENT') {
-            const resolvingPath = path.resolve(
-                __dirname,
-                'client',
-                // 'build',
-                'errorPage.html'
-            );
-            return res.sendFile(resolvingPath);
-        } else {
-            throw err;
-        }
-
+        return res.status(500).send("Failed")
     }
 });
 
