@@ -1,5 +1,7 @@
+const fs = require('fs');
 const cors = require('cors');
 const path = require('path');
+const morgan = require('morgan');
 const helmet = require("helmet");
 const xss = require('xss-clean');
 const express = require('express');
@@ -14,23 +16,46 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true, parameterLimit: 50000 }));
 app.use(helmet());
+
 // Data Sanitization against NoSQL Injection Attacks
 app.use(mongoSanitize());
+
 // Data Sanitization against XSS attacks
 app.use(xss());
-app.use(cors());
 
-// app.set('trust proxy', 1);
+//Setting up CORS
+app.use(cors());
+// const allowedOrigins = ["http://localhost:3000",];
+// app.use(function (req, res, next) {
+//     let origin = req.headers.origin;
+//     if (allowedOrigins.includes(origin)) {
+//         res.header("Access-Control-Allow-Origin", origin); // restrict it to the required domain
+//     }
+
+//     res.header(
+//         "Access-Control-Allow-Headers",
+//         "Origin, X-Requested-With, Content-Type, Accept"
+//     );
+//     next();
+// });
+
+//Morgan for logging
+var accessLogStream = fs.createWriteStream(path.join(__dirname, 'reqs.log'), { flags: 'a' })
+app.use(morgan('(:remote-addr - [:date[iso]]) (":method :url HTTP/:http-version" :status) (TIME : :response-time[3] ms) (":user-agent" :req[x-auth-token])', { stream: accessLogStream }))
+
+
+app.set('trust proxy', 1);
 
 //Connect to DB
 connectToDatabase();
 
 //Setup Sentry
-initSentry();
+// initSentry();
 
 //Setting up routes
 app.use('/api/feed', require('./routes/api/feed'));
 app.use('/api/users', require('./routes/api/users'));
+app.use('/api/admin', require('./routes/api/admin'));
 app.use('/api/codes', require('./routes/api/codes'));
 app.use('/api/files', require('./routes/api/files'));
 app.use('/api/pages', require('./routes/api/pages'));
@@ -49,29 +74,13 @@ app.use('/posts', express.static('images/posts'));
 app.use('/profilepictures', express.static('images/profilepictures'));
 app.use('/headerimages', express.static('images/headerimages'));
 
-app.get('*', (req, res) => {
+app.get('/', (req, res) => {
     try {
-        const resolvingPath = path.resolve(
-            __dirname,
-            'client',
-            // 'build',
-            'index.html'
-        );
-        return res.sendFile(resolvingPath);
+        
+        return res.status(200).send("v0.9");
     } catch (err) {
         console.log(err)
-        if (err.code === 'ENOENT') {
-            const resolvingPath = path.resolve(
-                __dirname,
-                'client',
-                // 'build',
-                'errorPage.html'
-            );
-            return res.sendFile(resolvingPath);
-        } else {
-            throw err;
-        }
-
+        return res.status(500).send("Failed")
     }
 });
 

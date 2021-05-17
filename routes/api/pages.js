@@ -2,6 +2,7 @@ const express = require('express');
 const User = require('../../models/User');
 const Page = require('../../models/Page');
 const auth = require('../../middleware/auth');
+const semiAuth = require('../../middleware/semiAuth');
 const neodriver = require('../../neo4jconnect');
 
 const router = express.Router();
@@ -75,7 +76,7 @@ router.post('/createPage', auth, async (req, res) => {
 //@desc    Get page details
 //access   Private
 
-router.post('/getPageDetails', auth, async (req, res) => {
+router.post('/getPageDetails', semiAuth, async (req, res) => {
     const { pageId } = req.body;
     try {
         const page = await Page.findById(pageId).populate('creator', 'name username');
@@ -83,8 +84,10 @@ router.post('/getPageDetails', auth, async (req, res) => {
         var pageDetails = { name, description, category, creator };
         const session = neodriver.session();
         try {
-            const neo_res = await session.run(`MATCH (u),(pg) WHERE u.id = "${req.id}" AND pg.id = "${pageId}" RETURN EXISTS((u)-[:SUBSCRIBED_TO]->(pg))`);
-            pageDetails.isSubscribed = neo_res.records[0]._fields[0];
+            if (req.id) {
+                const neo_res = await session.run(`MATCH (u),(pg) WHERE u.id = "${req.id}" AND pg.id = "${pageId}" RETURN EXISTS((u)-[:SUBSCRIBED_TO]->(pg))`);
+                pageDetails.isSubscribed = neo_res.records[0]._fields[0];
+            }
             const neo_res_posts = await session.run(`MATCH (pg:Page{id:"${pageId}"})-[php:PAGE_HAS_POST]->(p:Post) RETURN p.id`);
             posts = [];
             neo_res_posts.records.map((record) => posts.push(record._fields[0]));

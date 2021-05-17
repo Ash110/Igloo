@@ -5,6 +5,7 @@ const express = require('express');
 const User = require('../../models/User');
 const Space = require('../../models/Space');
 const auth = require('../../middleware/auth');
+const semiAuth = require('../../middleware/semiAuth');
 const neodriver = require('../../neo4jconnect');
 const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
 const {
@@ -128,7 +129,7 @@ router.post('/createDiscussionRoom', auth, async (req, res) => {
 //@desc    Fetch all rooms
 //access   Private
 
-router.post('/getRoomDetails', auth, async (req, res) => {
+router.post('/getRoomDetails', semiAuth, async (req, res) => {
     const { roomId } = req.body;
     try {
         const room = await Space.findById(roomId)

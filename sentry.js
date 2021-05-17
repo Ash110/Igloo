@@ -1,5 +1,4 @@
-import * as Sentry from "@sentry/node";
-import * as Tracing from "@sentry/tracing";
+const Sentry = require("@sentry/node")
 
 const initSentry = () => {
     Sentry.init({

@@ -25,8 +25,10 @@ router.post('/getFeed', auth, async (req, res) => {
         console.log(`MATCH (:User{id:"${req.id}"})-[:IN_FEED]->(p:Post) WHERE p.expiryDate > "${b}" RETURN p.id,EXISTS((:User{id:"${req.id}"})-[:LIKES]->(p:Post)) ORDER BY p.publishDate DESC SKIP ${skip} LIMIT 30`);
         const neo_res = await session.run(`MATCH (:User{id:"${req.id}"})-[:IN_FEED]->(p:Post) WHERE p.expiryDate > "${b}" RETURN p.id,EXISTS((:User{id:"${req.id}"})-[:LIKES]->(p:Post)) ORDER BY p.publishDate DESC SKIP ${skip} LIMIT 30`);
         let ids = [];
+        let likesMap = {};
         for (const record of neo_res.records) {
             ids.push(record._fields[0]);
+            likesMap[record._fields[0]] = record._fields[1];
         }
         const records = await Post.find({ '_id': { $in: ids } }).populate({ path: 'creator page', 'select': 'name profilePicture username' });
         let posts = [];
@@ -41,7 +43,8 @@ router.post('/getFeed', auth, async (req, res) => {
                 }
                 responsePost.comments = comments ? comments.length : 0;
                 responsePost.likes = likes.length;
-                responsePost.hasLiked = neo_res.records[i]._fields[1];
+                responsePost.hasLiked = likesMap[records[i]._id];
+                // console.log(`${ids[i]} is ${responsePost.hasLiked}`);
                 if (isMovie) {
                     const localIMDbSearch = await LocalIMDb.findOne({ imdbId });
                     if (localIMDbSearch) {
@@ -70,12 +73,12 @@ router.post('/getFeed', auth, async (req, res) => {
                     }
                 }
                 posts.unshift(responsePost);
+                // console.log(responsePost._id, responsePost.hasLiked);
             } catch (err) {
                 console.log(err);
             }
         }
         const user = await User.findById(req.id).select('newNotifications numberOfNewNotifications');
-        console.log(posts.length);
         return res.status(200).send({ feed: posts, newNotifications: user.newNotifications, numberOfNewNotifications: user.numberOfNewNotifications, skip: posts.length, end: posts.length === 0 });
     } catch (err) {
         console.log(err);

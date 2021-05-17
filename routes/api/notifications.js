@@ -20,7 +20,7 @@ router.post('/getPendingFollowRequests', auth, async (req, res) => {
             const neo_res = await session.run(`Match (u:User) -[:HAS_REQUESTED_FOLLOW]->(you:User{id:"${req.id}"}) return u.id, u.username, u.name, u.profilePicture, (EXISTS ((you)-[:FOLLOWS]->(you)))`);
             requests = [];
             for (record of neo_res.records) {
-                requests.push([...record._fields, false]);
+                requests.push([...record._fields, false, false]);
             }
             await session.close()
             return res.status(200).send(requests);
