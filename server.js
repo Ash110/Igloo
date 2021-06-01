@@ -77,7 +77,7 @@ app.use('/headerimages', express.static('images/headerimages'));
 app.get('/', (req, res) => {
     try {
         
-        return res.status(200).send("v0.9");
+        return res.status(200).send("v1.0");
     } catch (err) {
         console.log(err)
         return res.status(500).send("Failed")

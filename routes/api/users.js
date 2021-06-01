@@ -1139,4 +1139,24 @@ router.post('/logout', auth, async (req, res) => {
     }
 });
 
+//@route   POST /api/users/collectemail
+//@desc    Log a user out
+//access   Private
+
+router.post('/collectemail', auth, async (req, res) => {
+    const { email } = req.body;
+    try {
+        await User.findByIdAndUpdate(req.id,
+            {
+                $pull:
+                    { 'notificationTokens': userId }
+            }
+        );
+        res.status(200).send();
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send("Server Error");
+    }
+});
+
 module.exports = router;

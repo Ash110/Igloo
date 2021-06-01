@@ -123,7 +123,9 @@ router.post('/createTextPost', auth, async (req, res) => {
     }
     expiryDate = expiryDate.toISOString();
     try {
+        const publishTime = new Date();
         const post = new Post({
+            publishTime,
             caption, expiryDate, isText: true, disableComments, selectedGroups, creator: req.id,
         });
         await post.save();
@@ -173,7 +175,9 @@ router.post('/createPageTextPost', auth, async (req, res) => {
     }
     expiryDate = expiryDate.toISOString();
     try {
+        const publishTime = new Date();
         const post = new Post({
+            publishTime,
             caption,
             expiryDate,
             isText: true,
@@ -224,7 +228,9 @@ router.post('/createSongPost', auth, async (req, res) => {
     }
     expiryDate = expiryDate.toISOString();
     try {
+        const publishTime = new Date();
         const post = new Post({
+            publishTime,
             caption,
             expiryDate,
             isText: false,
@@ -281,7 +287,9 @@ router.post('/createPageSongPost', auth, async (req, res) => {
     }
     expiryDate = expiryDate.toISOString();
     try {
+        const publishTime = new Date();
         const post = new Post({
+            publishTime,
             caption,
             expiryDate,
             isText: false,
@@ -334,7 +342,9 @@ router.post('/createMoviePost', auth, async (req, res) => {
     }
     expiryDate = expiryDate.toISOString();
     try {
+        const publishTime = new Date();
         const post = new Post({
+            publishTime,
             caption,
             expiryDate,
             isMovie: true,
@@ -390,7 +400,9 @@ router.post('/createPageMoviePost', auth, async (req, res) => {
     }
     expiryDate = expiryDate.toISOString();
     try {
+        const publishTime = new Date();
         const post = new Post({
+            publishTime,
             caption,
             expiryDate,
             isMovie: true,
@@ -442,7 +454,9 @@ router.post('/createResharedPost', auth, async (req, res) => {
     }
     expiryDate = expiryDate.toISOString();
     try {
+        const publishTime = new Date();
         const post = new Post({
+            publishTime,
             caption,
             expiryDate,
             isReshare: true,
