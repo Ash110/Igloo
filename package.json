@@ -11,7 +11,7 @@
   "dependencies": {
     "@sentry/node": "^6.2.4",
     "@sentry/tracing": "^6.2.4",
-    "agenda": "^4.0.1",
+    "agenda": "^4.4.0",
     "agora-access-token": "^2.0.4",
     "aws-sdk": "^2.853.0",
     "axios": "^0.21.1",
